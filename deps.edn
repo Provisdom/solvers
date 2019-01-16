@@ -1,0 +1,49 @@
+{:paths   ["src"]
+ :deps    {orchestra                        {:mvn/version "2018.12.06-2"}
+           provisdom/math                   {:git/url "https://github.com/Provisdom/math.git"
+                                             :sha     "3898047aa5a91eabc745114e8535290d4c3ea65e"}
+           provisdom/utility-belt           {:git/url "https://github.com/Provisdom/utility-belt.git"
+                                             :sha     "4814a2ad0f72fd9ae36c3166a9d60a609d0a0338"}
+
+           ;;;SOLVERS
+           ;;;for interpolation
+           incanter/incanter-core           {:mvn/version "1.9.2"}
+
+           ;;;COBYLA
+           de.xypron.jcobyla/jcobyla        {:mvn/version "1.2"
+                                             :exclusions [org.apache.maven.reporting/maven-reporting-exec]}
+
+           ;;;BOOLEAN SATISFIABILITY PROBLEM
+           org.ow2.sat4j/org.ow2.sat4j.core {:mvn/version "2.3.5"}
+           org.ow2.sat4j/org.ow2.sat4j.pb   {:mvn/version "2.3.5"}
+
+           com.joptimizer/joptimizer        {:mvn/version "4.0.0"}}
+ :mvn/repos {"XypronRelease" {:url "http://rsync.xypron.de/repository"}}
+ :aliases {:dev {:extra-paths ["siderail"]
+                 :extra-deps {metasoarous/oz {:mvn/version "1.4.1"}
+                              ca.umontreal.iro.simul/ssj {:mvn/version "3.3.1"}}}
+           :test {:extra-paths ["test"]
+                  :extra-deps  {com.cognitect/test-runner {:git/url "https://github.com/cognitect-labs/test-runner.git"
+                                                           :sha     "028a6d41ac9ac5d5c405dfc38e4da6b4cc1255d5"}
+                                org.clojure/test.check    {:mvn/version "0.10.0-alpha2"}
+                                provisdom/test            {:git/url "https://github.com/Provisdom/test.git"
+                                                           :sha     "52b5b0b0f01b4b284ee81dd6673b4c01f1d78f9c"}}
+                  :main-opts   ["-m" "cognitect.test-runner"
+                                "-n" "provisdom.solvers.curve-fitting-test"
+                                "-n" "provisdom.solvers.generalized-regression-neural-network-test"
+                                "-n" "provisdom.solvers.integer-optimize-test"
+                                "-n" "provisdom.solvers.integer-root-solvers-test"
+                                "-n" "provisdom.solvers.internal-apache-solvers-test"
+                                "-n" "provisdom.solvers.internal-metaheuristics-test"
+                                "-n" "provisdom.solvers.internal-wrappers-test"
+                                "-n" "provisdom.solvers.interpolation-test"
+                                "-n" "provisdom.solvers.iterative-linear-least-squares-test"
+                                "-n" "provisdom.solvers.linear-programming-test"
+                                "-n" "provisdom.solvers.logistic-regression-test"
+                                "-n" "provisdom.solvers.multinomial-logistic-regression-test"
+                                "-n" "provisdom.solvers.nonlinear-constraints-without-objective-test"
+                                "-n" "provisdom.solvers.nonlinear-programming-test"
+                                "-n" "provisdom.solvers.optimize-univariate-test"
+                                "-n" "provisdom.solvers.quadratic-programming-test"
+                                "-n" "provisdom.solvers.root-solvers-test"
+                                "-n" "provisdom.solvers.stepwise-regression-test"]}}}
