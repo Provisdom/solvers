@@ -33,83 +33,86 @@
                    ::curve-fitting/f-vals   g-xs
                    ::curve-fitting/basis-fn (fn [x]
                                               [1.0 x (m/cube x)])})]
-    (is= [-374.1841730714473 198.65888604231853 -2.7220798937280524]
-         (::curve-fitting/line-fitting-weights lls-map))
-    (is= 265.55365784229997
-         ((::curve-fitting/line-fitting-fn lls-map) 5.5)))
+    (is (data-approx= [-374.1841730714473 198.65888604231853 -2.7220798937280524]
+                      (::curve-fitting/line-fitting-weights lls-map)))
+    (is (data-approx= 265.55365784229997
+                      ((::curve-fitting/line-fitting-fn lls-map) 5.5))))
   (let [lls-map-x (curve-fitting/linear-least-squares-line-fitting
                     {::curve-fitting/x-vals   (conj xs 6.0) ;can have duplicate x-vals
                      ::curve-fitting/f-vals   (conj g-xs 3.23432)
                      ::curve-fitting/basis-fn (fn [x]
                                                 [1.0 x (m/cube x)])})]
-    (is= [-287.27029929684994 162.806101134645 -2.3851099982080766]
-         (::curve-fitting/line-fitting-weights lls-map-x))
-    (is= 211.3405809918287
-         ((::curve-fitting/line-fitting-fn lls-map-x) 5.5)))
+    (is (data-approx= [-287.27029929684994 162.806101134645 -2.3851099982080766]
+                      (::curve-fitting/line-fitting-weights lls-map-x)))
+    (is (data-approx= 211.3405809918287
+                      ((::curve-fitting/line-fitting-fn lls-map-x) 5.5))))
   (let [lls-map2 (curve-fitting/linear-least-squares-line-fitting
                    {::curve-fitting/x-vals   xs
                     ::curve-fitting/f-vals   g-xs
                     ::curve-fitting/basis-fn (fn [x]
                                                [1.0 (m/sq x) (m/cube x)])})]
-    (is= [-147.53975088364837 49.710219695486124 -6.462473288353114]
-         (::curve-fitting/line-fitting-weights lls-map2))
-    (is= 281.0004015550576
-         ((::curve-fitting/line-fitting-fn lls-map2) 5.5)))
-  (let [ch1-4 (curve-fitting/linear-least-squares-line-fitting
-                {::curve-fitting/x-vals   xs
-                 ::curve-fitting/f-vals   g-xs
-                 ::curve-fitting/basis-fn (series/polynomial-fn
-                                            4 {::series/chebyshev-kind 1})})]
-    (is= [-1377.7020833331776 1360.6833333331895 -267.49999999997624
-          24.316666666665014 -0.7979166666666255]
-         (::curve-fitting/line-fitting-weights ch1-4))
-    (is= 322.47187499999745
-         ((::curve-fitting/line-fitting-fn ch1-4) 5.5)))
-  (let [ch1-3 (curve-fitting/linear-least-squares-line-fitting
-                {::curve-fitting/x-vals   xs
-                 ::curve-fitting/f-vals   g-xs
-                 ::curve-fitting/basis-fn (series/polynomial-fn
-                                            3 {::series/chebyshev-kind 1})})]
-    (is= [1125.4528301886708 -953.7825696316196 136.6630727762796 -5.672955974842742]
-         (::curve-fitting/line-fitting-weights ch1-3))
-    (is= 329.3530997304597
-         ((::curve-fitting/line-fitting-fn ch1-3) 5.5)))
-  (let [ch1-2 (curve-fitting/linear-least-squares-line-fitting
-                {::curve-fitting/x-vals   xs
-                 ::curve-fitting/f-vals   g-xs
-                 ::curve-fitting/basis-fn (series/polynomial-fn
-                                            2 {::series/chebyshev-kind 1})})]
-    (is= [-547.6597938144306 337.4874815905734 -17.7349042709867]
-         (::curve-fitting/line-fitting-weights ch1-2))
-    (is= 253.29455081001447
-         ((::curve-fitting/line-fitting-fn ch1-2) 5.5)))
-  (let [ch2-3 (curve-fitting/linear-least-squares-line-fitting
-                {::curve-fitting/x-vals   xs
-                 ::curve-fitting/f-vals   g-xs
-                 ::curve-fitting/basis-fn (series/polynomial-fn
-                                            3 {::series/chebyshev-kind 2})})]
-    (is= [1057.1212938004992 -474.05480682837816 68.3315363881387 -2.8364779874213335]
-         (::curve-fitting/line-fitting-weights ch2-3))
-    (is= 329.35309973045923
-         ((::curve-fitting/line-fitting-fn ch2-3) 5.5)))
-  (let [p4 (curve-fitting/linear-least-squares-line-fitting
+    (is (data-approx= [-147.53975088364837 49.710219695486124 -6.462473288353114]
+                      (::curve-fitting/line-fitting-weights lls-map2)))
+    (is (data-approx= 281.0004015550576
+                      ((::curve-fitting/line-fitting-fn lls-map2) 5.5)))))
+(let [ch1-4 (curve-fitting/linear-least-squares-line-fitting
+              {::curve-fitting/x-vals   xs
+               ::curve-fitting/f-vals   g-xs
+               ::curve-fitting/basis-fn (series/polynomial-fn
+                                          4 {::series/chebyshev-kind 1})})]
+  (is (data-approx= [-1377.7020833331776 1360.6833333331895 -267.49999999997624
+                     24.316666666665014 -0.7979166666666255]
+                    (::curve-fitting/line-fitting-weights ch1-4)))
+  (is (data-approx= 322.47187499999745
+                    ((::curve-fitting/line-fitting-fn ch1-4) 5.5))))
+(let [ch1-3 (curve-fitting/linear-least-squares-line-fitting
+              {::curve-fitting/x-vals   xs
+               ::curve-fitting/f-vals   g-xs
+               ::curve-fitting/basis-fn (series/polynomial-fn
+                                          3 {::series/chebyshev-kind 1})})]
+  (is (data-approx=
+        [1125.4528301886708 -953.7825696316196 136.6630727762796 -5.672955974842742]
+        (::curve-fitting/line-fitting-weights ch1-3)))
+  (is (data-approx= 329.3530997304597
+                    ((::curve-fitting/line-fitting-fn ch1-3) 5.5))))
+(let [ch1-2 (curve-fitting/linear-least-squares-line-fitting
+              {::curve-fitting/x-vals   xs
+               ::curve-fitting/f-vals   g-xs
+               ::curve-fitting/basis-fn (series/polynomial-fn
+                                          2 {::series/chebyshev-kind 1})})]
+  (is (data-approx= [-547.6597938144306 337.4874815905734 -17.7349042709867]
+                    (::curve-fitting/line-fitting-weights ch1-2)))
+  (is (data-approx= 253.29455081001447
+                    ((::curve-fitting/line-fitting-fn ch1-2) 5.5))))
+(let [ch2-3 (curve-fitting/linear-least-squares-line-fitting
+              {::curve-fitting/x-vals   xs
+               ::curve-fitting/f-vals   g-xs
+               ::curve-fitting/basis-fn (series/polynomial-fn
+                                          3 {::series/chebyshev-kind 2})})]
+  (is (data-approx=
+        [1057.1212938004992 -474.05480682837816 68.3315363881387 -2.8364779874213335]
+        (::curve-fitting/line-fitting-weights ch2-3)))
+  (is (data-approx= 329.35309973045923
+                    ((::curve-fitting/line-fitting-fn ch2-3) 5.5))))
+(let [p4 (curve-fitting/linear-least-squares-line-fitting
+           {::curve-fitting/x-vals   xs
+            ::curve-fitting/f-vals   g-xs
+            ::curve-fitting/basis-fn (series/polynomial-fn 4)})]
+  (is (data-approx= [-1110.999999999948 1287.733333333297 -528.6166666666575
+                     97.26666666666567 -6.383333333333295]
+                    (::curve-fitting/line-fitting-weights p4)))
+  (is (data-approx= 322.4718750000002
+                    ((::curve-fitting/line-fitting-fn p4) 5.5))))
+(let [p1-4 (curve-fitting/linear-least-squares-line-fitting
              {::curve-fitting/x-vals   xs
               ::curve-fitting/f-vals   g-xs
-              ::curve-fitting/basis-fn (series/polynomial-fn 4)})]
-    (is= [-1110.999999999948 1287.733333333297 -528.6166666666575
-          97.26666666666567 -6.383333333333295]
-         (::curve-fitting/line-fitting-weights p4))
-    (is= 322.4718750000002
-         ((::curve-fitting/line-fitting-fn p4) 5.5)))
-  (let [p1-4 (curve-fitting/linear-least-squares-line-fitting
-               {::curve-fitting/x-vals   xs
-                ::curve-fitting/f-vals   g-xs
-                ::curve-fitting/basis-fn (series/polynomial-fn
-                                           4 {::series/start-degree 1})})]
-    (is= [116.73530443936708 -108.88714394337724 34.8383049657826 -3.0789904661636016]
-         (::curve-fitting/line-fitting-weights p1-4))
-    (is= 326.9623453676063
-         ((::curve-fitting/line-fitting-fn p1-4) 5.5))))
+              ::curve-fitting/basis-fn (series/polynomial-fn
+                                         4 {::series/start-degree 1})})]
+  (is (data-approx=
+        [116.73530443936708 -108.88714394337724 34.8383049657826 -3.0789904661636016]
+        (::curve-fitting/line-fitting-weights p1-4)))
+  (is (data-approx= 326.9623453676063
+                    ((::curve-fitting/line-fitting-fn p1-4) 5.5))))
 
 (deftest b-spline-line-fitting-test
   (is (spec-check curve-fitting/b-spline-line-fitting))
@@ -183,11 +186,12 @@
                                                     (let [[x y z] v]
                                                       [1 x y z (m/sq x)])
                                                     []))})]
-    (is= 14.303501506024148
-         ((::curve-fitting/curve-fitting-fn lls-z) [5.5 28.7 4.3]))
-    (is= [2.858433734940034 25.911897590361473 -0.8659638554216929
-          -2.4051204819277294 -3.169427710843378]
-         (::curve-fitting/curve-fitting-weights lls-z)))
+    (is (data-approx= 14.303501506024148
+                      ((::curve-fitting/curve-fitting-fn lls-z) [5.5 28.7 4.3])))
+    (is (data-approx=
+          [2.858433734940034 25.911897590361473 -0.8659638554216929
+           -2.4051204819277294 -3.169427710843378]
+          (::curve-fitting/curve-fitting-weights lls-z))))
   (let [lls-curve (curve-fitting/linear-least-squares-curve-fitting
                     {::curve-fitting/x-matrix       xys
                      ::curve-fitting/f-vals         g-xys
@@ -196,10 +200,11 @@
                                                         (let [[x y] v]
                                                           [1 x y (m/cube x)])
                                                         []))})]
-    (is= 225.39971828421585
-         ((::curve-fitting/curve-fitting-fn lls-curve) [5.5 28.7]))
-    (is= [3576.2055568677993 -1644.3254459626135 107.97588652482267 15.591742575196873]
-         (::curve-fitting/curve-fitting-weights lls-curve)))
+    (is (data-approx= 225.39971828421585
+                      ((::curve-fitting/curve-fitting-fn lls-curve) [5.5 28.7])))
+    (is (data-approx=
+          [3576.2055568677993 -1644.3254459626135 107.97588652482267 15.591742575196873]
+          (::curve-fitting/curve-fitting-weights lls-curve))))
   (let [poly-2 (curve-fitting/linear-least-squares-curve-fitting
                  {::curve-fitting/x-matrix       xys
                   ::curve-fitting/f-vals         g-xys
@@ -209,11 +214,12 @@
                                                            val-v ((series/polynomial-2D-fn-by-degree 2) x y)]
                                                        val-v)
                                                      []))})]
-    (is= -261.66971859835485
-         ((::curve-fitting/curve-fitting-fn poly-2) [5.5 28.7]))
-    (is= [-3189.545588323287 334.41408500495845 -368.8008791074165
-          2.9019124617507708 -86.23982036747992 217.56283750613647]
-         (::curve-fitting/curve-fitting-weights poly-2)))
+    (is (data-approx= -261.66971859835485
+                      ((::curve-fitting/curve-fitting-fn poly-2) [5.5 28.7])))
+    (is (data-approx=
+          [-3189.545588323287 334.41408500495845 -368.8008791074165
+           2.9019124617507708 -86.23982036747992 217.56283750613647]
+          (::curve-fitting/curve-fitting-weights poly-2))))
   (let [poly-3 (curve-fitting/linear-least-squares-curve-fitting
                  {::curve-fitting/x-matrix       xys
                   ::curve-fitting/f-vals         g-xys
@@ -223,13 +229,14 @@
                                                            val-v ((series/polynomial-2D-fn-by-degree 3) x y)]
                                                        val-v)
                                                      []))})]
-    (is= -109.31465603752986
-         ((::curve-fitting/curve-fitting-fn poly-3) [5.5 28.7]))
-    (is= [-2964.644064914418 197.5044338683106 1334.2066850436406
-          11.103399823769012 -202.70447843509646 174.80915849973607
-          0.03301654985858392 -2.317900060917706 29.851202599925646
-          -52.79533542976914]
-         (::curve-fitting/curve-fitting-weights poly-3)))
+    (is (data-approx= -109.31465603752986
+                      ((::curve-fitting/curve-fitting-fn poly-3) [5.5 28.7])))
+    (is (data-approx=
+          [-2964.644064914418 197.5044338683106 1334.2066850436406
+           11.103399823769012 -202.70447843509646 174.80915849973607
+           0.03301654985858392 -2.317900060917706 29.851202599925646
+           -52.79533542976914]
+          (::curve-fitting/curve-fitting-weights poly-3))))
   (let [poly-4 (curve-fitting/linear-least-squares-curve-fitting
                  {::curve-fitting/x-matrix       xys
                   ::curve-fitting/f-vals         g-xys
@@ -239,14 +246,15 @@
                                                            val-v ((series/polynomial-2D-fn-by-degree 4) x y)]
                                                        val-v)
                                                      []))})]
-    (is= 176.26088371885817
-         ((::curve-fitting/curve-fitting-fn poly-4) [5.5 28.7]))
-    (is= [-2050.3968757541825 106.29722391047446 1981.8669830053382
-          14.064819444200818 -211.08730725698555 -259.6457040821559
-          0.14328304225982386 -7.152479556335808 76.65972517042242
-          -69.41038436784879 1.3854417314597466E-4 -0.026159257745385543
-          0.8018493606563802 -7.247196255726908 10.718055555555372]
-         (::curve-fitting/curve-fitting-weights poly-4)))
+    (is (data-approx= 176.26088371885817
+                      ((::curve-fitting/curve-fitting-fn poly-4) [5.5 28.7])))
+    (is (data-approx=
+          [-2050.3968757541825 106.29722391047446 1981.8669830053382
+           14.064819444200818 -211.08730725698555 -259.6457040821559
+           0.14328304225982386 -7.152479556335808 76.65972517042242
+           -69.41038436784879 1.3854417314597466E-4 -0.026159257745385543
+           0.8018493606563802 -7.247196255726908 10.718055555555372]
+          (::curve-fitting/curve-fitting-weights poly-4))))
   (let [poly-20 (curve-fitting/linear-least-squares-curve-fitting
                   {::curve-fitting/x-matrix       xys
                    ::curve-fitting/f-vals         g-xys
@@ -258,15 +266,16 @@
                                                                      {::series/chebyshev-kind 1}) x y)]
                                                         val-v)
                                                       []))})]
-    (is= 123.65870528567757
-         ((::curve-fitting/curve-fitting-fn poly-20) [5.5 28.7]))
-    (is= [-4570.710184016991 -348.5196618375316 7126.080272273072 29.4624197555226
-          -239.66381568606565 -1377.9959457490452 -0.37825629375083264
-          -5.214477757191738 56.624414816925864 114.13616877081664
-          0.0045612061972588325 -0.03113641892213491 0.6647388129750418
-          -5.569874056570459 -3.345550489699451 -1.7560473159920388E-5
-          2.0814908582451206E-5 0.001121204887739387 -0.024356456660173074
-          0.18373754643701698]
-         (::curve-fitting/curve-fitting-weights poly-20))))
+    (is (data-approx= 123.65870528567757
+                      ((::curve-fitting/curve-fitting-fn poly-20) [5.5 28.7])))
+    (is (data-approx=
+          [-4570.710184016991 -348.5196618375316 7126.080272273072 29.4624197555226
+           -239.66381568606565 -1377.9959457490452 -0.37825629375083264
+           -5.214477757191738 56.624414816925864 114.13616877081664
+           0.0045612061972588325 -0.03113641892213491 0.6647388129750418
+           -5.569874056570459 -3.345550489699451 -1.7560473159920388E-5
+           2.0814908582451206E-5 0.001121204887739387 -0.024356456660173074
+           0.18373754643701698]
+          (::curve-fitting/curve-fitting-weights poly-20)))))
 
 #_(ost/unstrument)
