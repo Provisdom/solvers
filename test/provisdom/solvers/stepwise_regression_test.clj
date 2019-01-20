@@ -21,19 +21,6 @@
 
 (def y [1 2 3 4 5 6 7 8 9])
 
-(defn selection-score-fn
-  [prior error data-count parameter-count]
-  (let [log-p (* -0.5
-                 data-count
-                 (inc (m/log
-                        (* m/two-pi
-                           error))))
-        bic (- log-p
-               (* 0.5
-                  parameter-count
-                  (m/log data-count)))]
-    (+ (m/log prior) bic)))
-
 (defn prob-of-model-fn
   [component-group]
   1.0)
@@ -84,7 +71,7 @@
                 {:x-mx                         x-mx
                  :y                            y
                  :regression-fn                (stepwise/ordinary-stepwise-regression-fn)
-                 :selection-score-fn           selection-score-fn
+                 :selection-score-fn           stepwise/least-squares-bic-selection-score-fn
                  :prob-of-model-fn             prob-of-model-fn
                  :best-component-group-info    #::stepwise
                                                    {:score           -1000.0
@@ -147,7 +134,7 @@
                                      :b {::stepwise/basis-fn
                                          (fn [x]
                                            [(get x 1 0.0)])}}
-                :selection-score-fn selection-score-fn
+                :selection-score-fn stepwise/least-squares-bic-selection-score-fn
                 :prob-of-model-fn   prob-of-model-fn})
          ::stepwise/component-group
          keys)))

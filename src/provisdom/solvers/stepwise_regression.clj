@@ -81,17 +81,21 @@
                         :anomaly ::anomalies/anomaly))
     #(gen/return (ordinary-stepwise-regression-fn))))
 
+(s/def ::prior ::m/prob)
+(s/def ::data-count ::m/long+)
+(s/def ::parameter-count ::m/long+)
+
 (s/def ::selection-score-fn
-  (s/fspec :args (s/cat :prior ::m/prob
-                        :error ::error
-                        :data-count ::m/long+
-                        :parameter-count ::m/long+)
+  (s/fspec :args (s/cat :args (s/keys :req [::prior
+                                            ::error
+                                            ::data-count
+                                            ::parameter-count]))
            :ret ::m/num))
 
 (s/def ::prob-of-model-fn
   (s/with-gen
     (s/fspec :args (s/cat :component-group ::component-group)
-             :ret ::m/finite)
+             :ret ::m/prob)
     #(gen/return (fn [cg] 0.1))))
 
 (s/def ::score ::m/num)
@@ -164,6 +168,21 @@
                                               ::log-regress/abs-accu])))
         :ret ::regression-fn)
 
+(defn least-squares-bic-selection-score-fn
+  [{::keys [prior error data-count parameter-count]}]
+  (let [log-p (* -0.5
+                 data-count
+                 (inc (m/log
+                        (* m/two-pi
+                           error))))
+        bic (- log-p
+               (* 0.5
+                  parameter-count
+                  (m/log data-count)))]
+    (+ (m/log prior) bic)))
+
+(s/def least-squares-bic-selection-score-fn ::selection-score-fn)
+
 (defn one-step-solve
   ""
   [{::keys [x-mx y regression-fn selection-score-fn prob-of-model-fn
@@ -189,10 +208,10 @@
                                                 component-group))
                            prior (prob-of-model-fn component-group)
                            best-possible-new-score (selection-score-fn
-                                                     prior
-                                                     0.0
-                                                     data-count
-                                                     parameter-count)
+                                                     {::prior           prior
+                                                      ::error           0.0
+                                                      ::data-count      data-count
+                                                      ::parameter-count parameter-count})
                            best-score (::score best)]
                        (if (<= best-possible-new-score best-score)
                          (recur (inc i) best)
@@ -202,10 +221,10 @@
                              (recur (inc i) best)
                              (let [{::keys [error weights]} sol
                                    score (selection-score-fn
-                                           prior
-                                           error
-                                           data-count
-                                           parameter-count)]
+                                           {::prior           prior
+                                            ::error           error
+                                            ::data-count      data-count
+                                            ::parameter-count parameter-count})]
                                (if (> score best-score)
                                  (recur (inc i) {::score           score
                                                  ::component-group component-group
