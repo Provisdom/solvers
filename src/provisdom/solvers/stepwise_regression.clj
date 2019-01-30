@@ -179,7 +179,9 @@
                (* 0.5
                   parameter-count
                   (m/log data-count)))]
-    (+ (m/log prior) bic)))
+    (if (zero? prior)
+      m/inf-
+      (+ (m/log prior) bic))))
 
 (s/def least-squares-bic-selection-score-fn ::selection-score-fn)
 
