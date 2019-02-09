@@ -51,7 +51,11 @@
            :ret ::independent-variables))
 
 (s/def ::extra-degrees ::m/long-non-)
-(s/def ::component-name keyword?)
+
+(s/def ::component-name
+  (s/with-gen any?
+              #(s/gen (s/or :keyword keyword?
+                            :number ::m/number))))
 
 (s/def ::component-info
   (s/keys :req [::basis-fn]
