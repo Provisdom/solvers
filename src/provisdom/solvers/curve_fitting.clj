@@ -9,9 +9,9 @@
     [provisdom.math.vector :as vector]
     [provisdom.math.matrix :as mx]
     [incanter.interpolation :as incanter]
-    [uncomplicate.neanderthal.native :as nat]
-    [uncomplicate.neanderthal.core :as n]
-    [uncomplicate.neanderthal.linalg :as la]
+    [uncomplicate.neanderthal.native :as native]
+    [uncomplicate.neanderthal.core :as neanderthal]
+    [uncomplicate.neanderthal.linalg :as linear-algebra]
     [provisdom.math.neanderthal-matrix :as neanderthal-mx]))
 
 ;;;LINE FITTING
@@ -39,7 +39,8 @@
             lls (cond (anomalies/anomaly? solution) solution
                       (neanderthal-mx/empty-neanderthal-matrix? solution) []
                       :else (mx/get-column
-                              (neanderthal-mx/neanderthal-matrix->matrix solution)
+                              (neanderthal-mx/neanderthal-matrix->matrix
+                                solution)
                               0))]
         (if (anomalies/anomaly? lls)
           lls
@@ -158,10 +159,10 @@
         (if (anomalies/anomaly? lls)
           lls
           {::curve-fitting-fn      (fn [v]
-                                    (let [bf-v (curve-basis-fn v)]
-                                      (if (= (count lls) (count bf-v))
-                                        (vector/dot-product lls bf-v)
-                                        m/nan)))
+                                     (let [bf-v (curve-basis-fn v)]
+                                       (if (= (count lls) (count bf-v))
+                                         (vector/dot-product lls bf-v)
+                                         m/nan)))
            ::curve-fitting-weights lls})))))
 
 (s/def ::curve-fitting-fn
@@ -192,7 +193,7 @@
                        (mx/rows x-mx))
            (fn [f-v]
              (gen/return {::x-matrix x-mx
-                          ::f-vals f-v})))))))
+                          ::f-vals   f-v})))))))
 
 (s/def ::matrix-and-vals-with-basis
   (s/merge ::x-matrix-with-f-vals (s/keys :req [::curve-basis-fn])))
@@ -201,6 +202,16 @@
         :args (s/cat :matrix-and-vals-with-basis ::matrix-and-vals-with-basis)
         :ret (s/or :sol (s/keys :req [::curve-fitting-fn ::curve-fitting-weights])
                    :anomaly ::anomalies/anomaly))
+
+;;;SMOOTHING CUBIC SPLINES
+(s/def ::smoothing-parameter ::m/prob)
+
+(s/def ::coefficients
+  (s/coll-of
+    (s/double-in :infinite? false
+                 :NaN? false)))
+
+(s/def ::variances (s/nilable ::vector/vector-finite+))
 
 (defprotocol Function1
   "Function of one argument"
@@ -218,7 +229,9 @@
 (defrecord Polynomial [^doubles coefficients n]
   Function1
   (evaluate [_ x]
-    (apply + (map * coefficients (take n (iterate #(* x %) 1.0)))))
+    (apply + (map *
+                  coefficients
+                  (take n (iterate #(* x %) 1.0)))))
 
   Derivative1
   (derivative [_]
@@ -229,12 +242,13 @@
                  (dec n))))
 
 (defn polynomial
+  ""
   [coefficients]
   (->Polynomial coefficients (count coefficients)))
 
 (s/fdef polynomial
-  :args (s/cat :coefficients (s/coll-of (s/double-in :infinite? false :NaN? false)))
-  :ret #(= Polynomial (type %)))
+        :args (s/cat :coefficients ::coefficients)
+        :ret #(= Polynomial (type %)))
 
 (defn- quincunx
   [^doubles u ^doubles v ^doubles w ^doubles q]
@@ -273,9 +287,9 @@
     q))
 #_(import '(umontreal.ssj.functionfit SmoothingCubicSpline))
 
-(defn- resolve
-  [x y weight rho]
-  (let [N (alength x)
+(defn- resolver
+  [x-array y-array v-array smoothing-parameter]
+  (let [N (alength x-array)
         spline-vector (make-array Polynomial (inc N))
         n (dec N)
         h (double-array N)
@@ -284,29 +298,29 @@
         v (double-array N)
         w (double-array N)
         q (double-array (inc N))
-        sigma (double-array (map #(if (<= % 0.0)
+        sigma (double-array (map #(if (m/non+? %)
                                     1e100
                                     (/ %))
-                                 weight))
-        mu (if (<= rho 0.0)
+                                 v-array))
+        mu (if (m/non+? smoothing-parameter)
              1e100
              (* 2.0
-                (/ (- 1.0 rho)
-                   (* 3.0 rho))))]
-    (aset h 0 (- (aget x 1)
-                 (aget x 0)))
+                (/ (m/one- smoothing-parameter)
+                   (* 3.0 smoothing-parameter))))]
+    (aset h 0 (- (aget x-array 1)
+                 (aget x-array 0)))
     (aset r 0 (/ 3.0
                  (aget h 0)))
     (doseq [i (range 1 n)]
-      (aset h i (- (aget x (inc i))
-                   (aget x i)))
+      (aset h i (- (aget x-array (inc i))
+                   (aget x-array i)))
       (aset r i (/ 3.0 (aget h i)))
-      (aset q i (- (* 3.0 (/ (- (aget y (inc i))
-                                (aget y i))
+      (aset q i (- (* 3.0 (/ (- (aget y-array (inc i))
+                                (aget y-array i))
                              (aget h i)))
                    (* 3.0
-                      (/ (- (aget y i)
-                            (aget y (dec i)))
+                      (/ (- (aget y-array i)
+                            (aget y-array (dec i)))
                          (aget h (dec i)))))))
 
     (doseq [i (range 1 n)]
@@ -324,8 +338,8 @@
       (aset u i (+ (* mu
                       (aget u i))
                    (* 2.0
-                      (- (aget x (inc i))
-                         (aget x (dec i))))))
+                      (- (aget x-array (inc i))
+                         (aget x-array (dec i))))))
       (aset v i (- (- (* (+ (aget r (dec i))
                             (aget r i))
                          (aget r i)
@@ -344,7 +358,7 @@
 
     (let [q (quincunx u v w q)
           params (double-array 4)
-          dd (- (aget y 1)
+          dd (- (aget y-array 1)
                 (* mu
                    (+ (* (- (+ (aget r 0)
                                (aget r 1)))
@@ -352,7 +366,7 @@
                       (* (aget r 1)
                          (aget q 2)))
                    (aget sigma 1)))]
-      (aset params 0 (- (aget y 0)
+      (aset params 0 (- (aget y-array 0)
                         (* mu
                            (aget r 0)
                            (aget q 1)
@@ -388,7 +402,7 @@
                              (aget q j))
                           (* (aget r j)
                              (aget q (inc j)))))
-        (aset params 0 (- (aget y j)
+        (aset params 0 (- (aget y-array j)
                           (* mu
                              (aget params 0)
                              (aget sigma j))))
@@ -399,81 +413,118 @@
       (aset params 1 (-> spline-vector
                          (aget n)
                          derivative
-                         (evaluate (- (aget x (dec N))
-                                      (aget x (- N 2))))))
+                         (evaluate (- (aget x-array (dec N))
+                                      (aget x-array (- N 2))))))
       (aset params 0 (-> spline-vector
                          (aget n)
-                         (evaluate (- (aget x (dec N))
-                                      (aget x (- N 2))))))
+                         (evaluate (- (aget x-array (dec N))
+                                      (aget x-array (- N 2))))))
       (aset spline-vector (inc n) (polynomial (vec params))))
 
     spline-vector))
 
 (defn- get-fit-polynomial-index
-  [x xs]
-  (or (->> xs
+  [x x-vals]
+  (or (->> x-vals
            (map-indexed vector)
-           (filter (fn [[_ x']] (< x x')))
+           (filter (fn [[_ x']]
+                     (< x x')))
            ffirst)
-      (count xs)))
+      (count x-vals)))
 
 (defn- smoothing-cubic-spline-eigenvalues*
-  [xs vs]
-  (let [N (count xs)
+  [x-vals variances]
+  (let [N (count x-vals)
         n (dec N)
-        h (vec (cons (xs 0) (map - (->> xs (drop 1)) xs)))
-        p (vec (cons 0.0 (mapv #(* 2.0 (+ %1 %2)) h (drop 1 h))))
+        h (vec (cons (x-vals 0)
+                     (map -
+                          (drop 1 x-vals)
+                          x-vals)))
+        p (vec (cons 0.0
+                     (mapv #(* 2.0 (+ %1 %2))
+                           h
+                           (drop 1 h))))
         r (mapv (partial / 3.0) h)
-        f (vec (cons 0.0 (map #(- (+ %1 %2)) h (drop 1 h))))
-        R (nat/dsb (- n 1) 1
-                   (interleave  (->> p (drop 1)) (->> h (drop 1))))
-        S (la/tri (nat/dtr (:lu (la/ptrf! (n/copy R)))))
-        Q' (nat/dgb (- n 1) N 0 2
-                    (interleave r (drop 1 f) (drop 1 r)))
-        S-1*Q' (n/mm (n/view-ge S) (nat/dge Q'))
-        K (n/mm (nat/dgd N (map (partial * (/ 2.0 3.0)) vs)) (n/trans S-1*Q') S-1*Q')
+        f (vec (cons 0.0
+                     (map #(- (+ %1 %2))
+                          h
+                          (drop 1 h))))
+        R (native/dsb (- n 1)
+                      1
+                      (interleave (->> p (drop 1)) (->> h (drop 1))))
+        S (linear-algebra/tri
+            (native/dtr (:lu (linear-algebra/ptrf! (neanderthal/copy R)))))
+        Q' (native/dgb (- n 1)
+                       N
+                       0
+                       2
+                       (interleave r (drop 1 f) (drop 1 r)))
+        S-1*Q' (neanderthal/mm (neanderthal/view-ge S) (native/dge Q'))
+        K (neanderthal/mm (native/dgd N
+                                      (map (partial * (/ 2.0 3.0))
+                                           variances))
+                          (neanderthal/trans S-1*Q')
+                          S-1*Q')
         d (neanderthal-mx/singular-values K)]
     d))
 
-(def smoothing-cubic-spline-eigenvalues (memoize smoothing-cubic-spline-eigenvalues*))
+(def smoothing-cubic-spline-eigenvalues
+  (memoize smoothing-cubic-spline-eigenvalues*))
 
 (defn smoothing-cubic-spline-dof
-  [xs vs rho]
-  (let [d (smoothing-cubic-spline-eigenvalues xs vs)]
-    (apply + (map #(/ (+ 1.0 (* 1.0 (/ (- 1.0 rho) rho) %))) d))))
+  ""
+  [{::keys [x-vals variances smoothing-parameter]}]
+  (let [d (smoothing-cubic-spline-eigenvalues x-vals variances)]
+    (apply +
+           (map #(/ (inc (* (m/one- smoothing-parameter)
+                            (/ smoothing-parameter)
+                            %)))
+                d))))
 
-(defrecord SmoothingCubicSpline [polynomials xs vs rho]
+(s/fdef smoothing-cubic-spline-dof
+        :args (s/cat :args (s/keys :req [::x-vals
+                                         ::variances
+                                         ::smoothing-parameter]))
+        :ret ::m/finite-non-)
+
+(defrecord SmoothingCubicSpline
+  [polynomials x-vals variances smoothing-parameter]
   Function1
   (evaluate [_ x]
-    (let [i (get-fit-polynomial-index x xs)]
+    (let [i (get-fit-polynomial-index x x-vals)]
       (if (zero? i)
-        (evaluate (polynomials i) (- x (xs 0)))
-        (evaluate (polynomials i) (- x (xs (dec i)))))))
+        (evaluate (polynomials i) (- x (x-vals 0)))
+        (evaluate (polynomials i) (- x (x-vals (dec i)))))))
 
   DegreesOfFreedom
   (dof [_]
-    (smoothing-cubic-spline-dof xs vs rho)))
-
+    (smoothing-cubic-spline-dof
+      {::x-vals              x-vals
+       ::variances           variances
+       ::smoothing-parameter smoothing-parameter})))
 
 (defn smoothing-cubic-spline
-  ([x y rho] (smoothing-cubic-spline  x y (repeat (count x) 1.0) rho))
-  ([x y v rho]
-   (let [s (vec (resolve (double-array x) (double-array y) (double-array v) rho))]
-     (->SmoothingCubicSpline s x v rho))))
-
-(s/def ::rho (s/double-in :min 0.0 :max 1.0))
+  ""
+  ([args] (smoothing-cubic-spline args {}))
+  ([{::keys [x-vals f-vals smoothing-parameter]}
+    {::keys [variances]}]
+   (let [variances (or variances (repeat (count x-vals) 1.0))
+         polynomials (vec (resolver (double-array x-vals)
+                                    (double-array f-vals)
+                                    (double-array variances)
+                                    smoothing-parameter))]
+     (->SmoothingCubicSpline polynomials x-vals variances smoothing-parameter))))
 
 (s/fdef smoothing-cubic-spline
-  :args (s/cat :x (s/coll-of double?)
-               :y (s/coll-of double?)
-               :v (s/or :coll (s/coll-of double?) :nil nil?)
-               :rho ::rho)
-  :ret #(= SmoothingCubicSpline (type %))
-  :fn (fn [{:keys [args]}]
-        (let [{:keys [x y v]} args]
-          (and (= (count x) (count y))
-               (or (nil? v)
-                   (= (count x) (count v)))))))
+        :args (s/and (s/cat :args (s/merge ::x-vals-with-f-vals
+                                           (s/keys :req [::smoothing-parameter]))
+                            :opts (s/? (s/keys :opt [::variances])))
+                     (fn [{:keys [args opts]}]
+                       (let [{::keys [x-vals]} args
+                             variances (::variances opts)]
+                         (or (nil? variances)
+                             (= (count x-vals) (count variances))))))
+        :ret #(= SmoothingCubicSpline (type %)))
 
 
 

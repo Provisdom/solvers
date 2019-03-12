@@ -54,65 +54,65 @@
     (is (data-approx= [-147.53975088364837 49.710219695486124 -6.462473288353114]
                       (::curve-fitting/line-fitting-weights lls-map2)))
     (is (data-approx= 281.0004015550576
-                      ((::curve-fitting/line-fitting-fn lls-map2) 5.5)))))
-(let [ch1-4 (curve-fitting/linear-least-squares-line-fitting
-              {::curve-fitting/x-vals   xs
-               ::curve-fitting/f-vals   g-xs
-               ::curve-fitting/basis-fn (series/polynomial-fn
-                                          4 {::series/chebyshev-kind 1})})]
-  (is (data-approx= [-1377.7020833331776 1360.6833333331895 -267.49999999997624
-                     24.316666666665014 -0.7979166666666255]
-                    (::curve-fitting/line-fitting-weights ch1-4)))
-  (is (data-approx= 322.47187499999745
-                    ((::curve-fitting/line-fitting-fn ch1-4) 5.5))))
-(let [ch1-3 (curve-fitting/linear-least-squares-line-fitting
-              {::curve-fitting/x-vals   xs
-               ::curve-fitting/f-vals   g-xs
-               ::curve-fitting/basis-fn (series/polynomial-fn
-                                          3 {::series/chebyshev-kind 1})})]
-  (is (data-approx=
-        [1125.4528301886708 -953.7825696316196 136.6630727762796 -5.672955974842742]
-        (::curve-fitting/line-fitting-weights ch1-3)))
-  (is (data-approx= 329.3530997304597
-                    ((::curve-fitting/line-fitting-fn ch1-3) 5.5))))
-(let [ch1-2 (curve-fitting/linear-least-squares-line-fitting
-              {::curve-fitting/x-vals   xs
-               ::curve-fitting/f-vals   g-xs
-               ::curve-fitting/basis-fn (series/polynomial-fn
-                                          2 {::series/chebyshev-kind 1})})]
-  (is (data-approx= [-547.6597938144306 337.4874815905734 -17.7349042709867]
-                    (::curve-fitting/line-fitting-weights ch1-2)))
-  (is (data-approx= 253.29455081001447
-                    ((::curve-fitting/line-fitting-fn ch1-2) 5.5))))
-(let [ch2-3 (curve-fitting/linear-least-squares-line-fitting
-              {::curve-fitting/x-vals   xs
-               ::curve-fitting/f-vals   g-xs
-               ::curve-fitting/basis-fn (series/polynomial-fn
-                                          3 {::series/chebyshev-kind 2})})]
-  (is (data-approx=
-        [1057.1212938004992 -474.05480682837816 68.3315363881387 -2.8364779874213335]
-        (::curve-fitting/line-fitting-weights ch2-3)))
-  (is (data-approx= 329.35309973045923
-                    ((::curve-fitting/line-fitting-fn ch2-3) 5.5))))
-(let [p4 (curve-fitting/linear-least-squares-line-fitting
-           {::curve-fitting/x-vals   xs
-            ::curve-fitting/f-vals   g-xs
-            ::curve-fitting/basis-fn (series/polynomial-fn 4)})]
-  (is (data-approx= [-1110.999999999948 1287.733333333297 -528.6166666666575
-                     97.26666666666567 -6.383333333333295]
-                    (::curve-fitting/line-fitting-weights p4)))
-  (is (data-approx= 322.4718750000002
-                    ((::curve-fitting/line-fitting-fn p4) 5.5))))
-(let [p1-4 (curve-fitting/linear-least-squares-line-fitting
+                      ((::curve-fitting/line-fitting-fn lls-map2) 5.5))))
+  (let [ch1-4 (curve-fitting/linear-least-squares-line-fitting
+                {::curve-fitting/x-vals   xs
+                 ::curve-fitting/f-vals   g-xs
+                 ::curve-fitting/basis-fn (series/polynomial-fn
+                                            4 {::series/chebyshev-kind 1})})]
+    (is (data-approx= [-1377.7020833331776 1360.6833333331895 -267.49999999997624
+                       24.316666666665014 -0.7979166666666255]
+                      (::curve-fitting/line-fitting-weights ch1-4)))
+    (is (data-approx= 322.47187499999745
+                      ((::curve-fitting/line-fitting-fn ch1-4) 5.5))))
+  (let [ch1-3 (curve-fitting/linear-least-squares-line-fitting
+                {::curve-fitting/x-vals   xs
+                 ::curve-fitting/f-vals   g-xs
+                 ::curve-fitting/basis-fn (series/polynomial-fn
+                                            3 {::series/chebyshev-kind 1})})]
+    (is (data-approx=
+          [1125.4528301886708 -953.7825696316196 136.6630727762796 -5.672955974842742]
+          (::curve-fitting/line-fitting-weights ch1-3)))
+    (is (data-approx= 329.3530997304597
+                      ((::curve-fitting/line-fitting-fn ch1-3) 5.5))))
+  (let [ch1-2 (curve-fitting/linear-least-squares-line-fitting
+                {::curve-fitting/x-vals   xs
+                 ::curve-fitting/f-vals   g-xs
+                 ::curve-fitting/basis-fn (series/polynomial-fn
+                                            2 {::series/chebyshev-kind 1})})]
+    (is (data-approx= [-547.6597938144306 337.4874815905734 -17.7349042709867]
+                      (::curve-fitting/line-fitting-weights ch1-2)))
+    (is (data-approx= 253.29455081001447
+                      ((::curve-fitting/line-fitting-fn ch1-2) 5.5))))
+  (let [ch2-3 (curve-fitting/linear-least-squares-line-fitting
+                {::curve-fitting/x-vals   xs
+                 ::curve-fitting/f-vals   g-xs
+                 ::curve-fitting/basis-fn (series/polynomial-fn
+                                            3 {::series/chebyshev-kind 2})})]
+    (is (data-approx=
+          [1057.1212938004992 -474.05480682837816 68.3315363881387 -2.8364779874213335]
+          (::curve-fitting/line-fitting-weights ch2-3)))
+    (is (data-approx= 329.35309973045923
+                      ((::curve-fitting/line-fitting-fn ch2-3) 5.5))))
+  (let [p4 (curve-fitting/linear-least-squares-line-fitting
              {::curve-fitting/x-vals   xs
               ::curve-fitting/f-vals   g-xs
-              ::curve-fitting/basis-fn (series/polynomial-fn
-                                         4 {::series/start-degree 1})})]
-  (is (data-approx=
-        [116.73530443936708 -108.88714394337724 34.8383049657826 -3.0789904661636016]
-        (::curve-fitting/line-fitting-weights p1-4)))
-  (is (data-approx= 326.9623453676063
-                    ((::curve-fitting/line-fitting-fn p1-4) 5.5))))
+              ::curve-fitting/basis-fn (series/polynomial-fn 4)})]
+    (is (data-approx= [-1110.999999999948 1287.733333333297 -528.6166666666575
+                       97.26666666666567 -6.383333333333295]
+                      (::curve-fitting/line-fitting-weights p4)))
+    (is (data-approx= 322.4718750000002
+                      ((::curve-fitting/line-fitting-fn p4) 5.5))))
+  (let [p1-4 (curve-fitting/linear-least-squares-line-fitting
+               {::curve-fitting/x-vals   xs
+                ::curve-fitting/f-vals   g-xs
+                ::curve-fitting/basis-fn (series/polynomial-fn
+                                           4 {::series/start-degree 1})})]
+    (is (data-approx=
+          [116.73530443936708 -108.88714394337724 34.8383049657826 -3.0789904661636016]
+          (::curve-fitting/line-fitting-weights p1-4)))
+    (is (data-approx= 326.9623453676063
+                      ((::curve-fitting/line-fitting-fn p1-4) 5.5)))))
 
 (deftest b-spline-line-fitting-test
   (is (spec-check curve-fitting/b-spline-line-fitting))
@@ -277,5 +277,31 @@
            2.0814908582451206E-5 0.001121204887739387 -0.024356456660173074
            0.18373754643701698]
           (::curve-fitting/curve-fitting-weights poly-20)))))
+
+(deftest smoothing-cubic-spline-dof-test
+  (is (spec-check curve-fitting/smoothing-cubic-spline-dof
+                  {:coll-check-limit 10
+                   :coll-error-limit 10
+                   :fspec-iterations 10
+                   :recursion-limit  1
+                   :test-check       {:num-tests 1}}))
+  (is= 0.0
+       (curve-fitting/smoothing-cubic-spline-dof
+         {::curve-fitting/x-vals              [0.0 1.0 2.0]
+          ::curve-fitting/variances           [1.0 1.0 1.0]
+          ::curve-fitting/smoothing-parameter 0.5})))
+
+(deftest smoothing-cubic-spline-test
+  (is (spec-check curve-fitting/smoothing-cubic-spline
+                  {:coll-check-limit 10
+                   :coll-error-limit 10
+                   :fspec-iterations 10
+                   :recursion-limit  1
+                   :test-check       {:num-tests 1}}))
+  (is= 0.0
+       (curve-fitting/smoothing-cubic-spline
+         {::curve-fitting/x-vals              [0.0 1.0 2.0]
+          ::curve-fitting/f-vals              [1.0 4.0 25.0]
+          ::curve-fitting/smoothing-parameter 0.5})))
 
 #_(ost/unstrument)
