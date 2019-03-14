@@ -211,7 +211,7 @@
     (s/double-in :infinite? false
                  :NaN? false)))
 
-(s/def ::variances (s/nilable ::vector/vector-finite+))
+(s/def ::variances ::vector/vector-finite+)
 
 (defprotocol Function1
   "Function of one argument"
@@ -434,33 +434,33 @@
 
 (defn- smoothing-cubic-spline-eigenvalues*
   [x-vals variances]
-  (let [N (count x-vals)
-        n (dec N)
-        h (vec (cons (x-vals 0)
-                     (map -
-                          (drop 1 x-vals)
-                          x-vals)))
-        p (vec (cons 0.0
-                     (mapv #(* 2.0 (+ %1 %2))
-                           h
-                           (drop 1 h))))
-        r (mapv (partial / 3.0) h)
-        f (vec (cons 0.0
-                     (map #(- (+ %1 %2))
-                          h
-                          (drop 1 h))))
-        R (native/dsb (- n 1)
+  (let [x-count (count x-vals)
+        n (dec x-count)
+        x-diffs (vec (cons (first x-vals)
+                           (map -
+                                (rest x-vals)
+                                x-vals)))
+        x2-skip-diffs (vec (cons 0.0
+                                 (mapv #(* 2.0 (+ %1 %2))
+                                       x-diffs
+                                       (rest x-diffs))))
+        r (mapv (partial / 3.0) x-diffs)
+        x-rev-skip-diffs (vec (cons 0.0
+                                    (map #(- (+ %1 %2))
+                                         x-diffs
+                                         (rest x-diffs))))
+        R (native/dsb (dec n)
                       1
-                      (interleave (->> p (drop 1)) (->> h (drop 1))))
+                      (interleave (rest x2-skip-diffs) (rest x-diffs)))
         S (linear-algebra/tri
             (native/dtr (:lu (linear-algebra/ptrf! (neanderthal/copy R)))))
-        Q' (native/dgb (- n 1)
-                       N
+        Q' (native/dgb (dec n)
+                       x-count
                        0
                        2
-                       (interleave r (drop 1 f) (drop 1 r)))
+                       (interleave r (rest x-rev-skip-diffs) (rest r)))
         S-1*Q' (neanderthal/mm (neanderthal/view-ge S) (native/dge Q'))
-        K (neanderthal/mm (native/dgd N
+        K (neanderthal/mm (native/dgd x-count
                                       (map (partial * (/ 2.0 3.0))
                                            variances))
                           (neanderthal/trans S-1*Q')
@@ -493,7 +493,7 @@
   (evaluate [_ x]
     (let [i (get-fit-polynomial-index x x-vals)]
       (if (zero? i)
-        (evaluate (polynomials i) (- x (x-vals 0)))
+        (evaluate (polynomials i) (- x (first x-vals)))
         (evaluate (polynomials i) (- x (x-vals (dec i)))))))
 
   DegreesOfFreedom
@@ -525,6 +525,12 @@
                          (or (nil? variances)
                              (= (count x-vals) (count variances))))))
         :ret #(= SmoothingCubicSpline (type %)))
+
+;;do the x-vals need to be strictly ascending?
+;;In DOF, why does the x(0) value affect the DOF? -- currently divide by zero if x(0)=0.0
+;;add documentation
+;;maybe use spec instead of defprotocols
+
 
 
 
