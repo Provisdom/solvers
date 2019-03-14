@@ -530,6 +530,7 @@
 ;;In DOF, why does the x(0) value affect the DOF? -- currently divide by zero if x(0)=0.0
 ;;add documentation
 ;;maybe use spec instead of defprotocols
+;;use math/neanderthal-mx where possible -- maybe add some capabilities to neanderthal-mx
 
 
 
