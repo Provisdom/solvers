@@ -1,4 +1,4 @@
-(require '[provisdom.solvers.curve-fitting :refer :all]
+(require '[provisdom.solvers.curve-fitting :refer :all :as cf]
          '[oz.core :as oz]
          '[clojure.pprint :refer [pprint]]
          '[provisdom.math.apache-matrix :as amx]
@@ -63,12 +63,12 @@
   (def rho 0.9)
   (def x (vec (sort (repeatedly 100 #(rand (* 10.0 2.0 Math/PI))))))
   (def y (mapv #(* 2.0 (+ (Math/sin %) (* (rand)))) x))
-  (def s (smoothing-cubic-spline x y rho))
-  (def rhos (range 0.0 1.001 0.001))
+  (def s (smoothing-cubic-spline {::cf/x-vals x ::cf/f-vals y ::cf/smoothing-parameter rho}))
+  (def rhos (range 0.0000000001 1.001 0.001))
   #_(def lambdas (mapv #(Math/pow 10 %) (range -20 0)))
-  (def splines (mapv (partial smoothing-cubic-spline x y) rhos))
-  (let [data (mapv (fn [s] {:rho (:rho s) :dof (dof s) :type :prediction}) splines)]
-    #_(pprint data)
+  (def splines (mapv #(smoothing-cubic-spline {::cf/x-vals x ::cf/f-vals y ::cf/smoothing-parameter %}) rhos))
+  (let [data (mapv (fn [s] {:rho (:smoothing-parameter s) :dof (dof s) :type :prediction}) splines)]
+    (pprint data)
     (oz/v! (scatter data :rho :dof nil)))
 
   :end)
@@ -77,7 +77,7 @@
   (def rho 0.9)
   (def x (vec (sort (repeatedly 100 #(rand (* 10.0 2.0 Math/PI))))))
   (def y (mapv #(* 2.0 (+ (Math/sin %) (* (rand)))) x))
-  (def s (smoothing-cubic-spline x y rho))
+  (def s (smoothing-cubic-spline {::cf/x-vals x ::cf/f-vals y ::cf/smoothing-parameter rho}))
   (def vs (range 0.01 10.0 0.01))
   #_(def lambdas (mapv #(Math/pow 10 %) (range -20 0)))
   (def splines (mapv #(smoothing-cubic-spline x y (repeat (count x) %) rho) vs))

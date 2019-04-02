@@ -280,28 +280,23 @@
 
 (deftest smoothing-cubic-spline-dof-test
   (is (spec-check curve-fitting/smoothing-cubic-spline-dof
-                  {:coll-check-limit 10
-                   :coll-error-limit 10
-                   :fspec-iterations 10
-                   :recursion-limit  1
-                   :test-check       {:num-tests 1}}))
+                  {:recursion-limit  1
+                   :test-check       {:num-tests 1000}}))
   (is= 0.0
        (curve-fitting/smoothing-cubic-spline-dof
-         {::curve-fitting/x-vals              [0.0 1.0 2.0]
-          ::curve-fitting/variances           [1.0 1.0 1.0]
+         {::curve-fitting/x-vals              [0.0 1.0 2.0 3.0]
+          ::curve-fitting/variances           [1.0 1.0 1.0 1.0]
           ::curve-fitting/smoothing-parameter 0.5})))
 
 (deftest smoothing-cubic-spline-test
   (is (spec-check curve-fitting/smoothing-cubic-spline
-                  {:coll-check-limit 10
-                   :coll-error-limit 10
-                   :fspec-iterations 10
+                  {:fspec-iterations 0
                    :recursion-limit  1
-                   :test-check       {:num-tests 1}}))
+                   :test-check       {:num-tests 1000}}))
   (is= 0.0
        (curve-fitting/smoothing-cubic-spline
-         {::curve-fitting/x-vals              [0.0 1.0 2.0]
-          ::curve-fitting/f-vals              [1.0 4.0 25.0]
+         {::curve-fitting/x-vals              [0.0 1.0 2.0 3.0]
+          ::curve-fitting/f-vals              [1.0 4.0 25.0 81.0]
           ::curve-fitting/smoothing-parameter 0.5})))
 
 #_(ost/unstrument)

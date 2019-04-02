@@ -62,10 +62,21 @@
            :ret ::vector/vector-finite))
 
 (s/def ::x-vals
-  (s/coll-of ::m/finite
-             :kind clojure.core/vector?
-             :into []
-             :min-count 2))
+  (s/with-gen
+    (s/and (s/coll-of ::m/finite
+                      :kind clojure.core/vector?
+                      :into []
+                      :min-count 4)
+           (fn [x] (->> x
+                        (partition 2)
+                        (every? (fn [[x1 x2]] (> x2 x1))))))
+    #(gen/bind
+       (s/gen (s/coll-of (s/double-in :infinite? false :NaN? false) :min-count 4))
+       (fn [x]
+         (gen/return (->> x
+                          set
+                          sort
+                          vec))))))
 
 (s/def ::x-vals-with-f-vals
   (s/with-gen
@@ -86,9 +97,9 @@
   (s/merge ::x-vals-with-f-vals (s/keys :req [::basis-fn])))
 
 (s/fdef linear-least-squares-line-fitting
-        :args (s/cat :vals-with-basis ::vals-with-basis)
-        :ret (s/or :sol (s/keys :req [::line-fitting-fn ::line-fitting-weights])
-                   :anomaly ::anomalies/anomaly))
+  :args (s/cat :vals-with-basis ::vals-with-basis)
+  :ret (s/or :sol (s/keys :req [::line-fitting-fn ::line-fitting-weights])
+             :anomaly ::anomalies/anomaly))
 
 (defn b-spline-line-fitting
   "Normally returns a function that takes a finite and returns a finite or nil.
@@ -131,10 +142,10 @@
   (s/merge ::distinct-x-vals-with-f-vals (s/keys :req [::degree])))
 
 (s/fdef b-spline-line-fitting
-        :args (s/cat :vals-with-degree ::vals-with-degree)
-        :ret (s/or :sol (s/fspec :args (s/cat :finite ::m/finite)
-                                 :ret (s/nilable ::m/number))
-                   :anomaly ::anomalies/anomaly))
+  :args (s/cat :vals-with-degree ::vals-with-degree)
+  :ret (s/or :sol (s/fspec :args (s/cat :finite ::m/finite)
+                           :ret (s/nilable ::m/number))
+             :anomaly ::anomalies/anomaly))
 
 ;;;CURVE FITTING
 (defn linear-least-squares-curve-fitting
@@ -199,12 +210,13 @@
   (s/merge ::x-matrix-with-f-vals (s/keys :req [::curve-basis-fn])))
 
 (s/fdef linear-least-squares-curve-fitting
-        :args (s/cat :matrix-and-vals-with-basis ::matrix-and-vals-with-basis)
-        :ret (s/or :sol (s/keys :req [::curve-fitting-fn ::curve-fitting-weights])
-                   :anomaly ::anomalies/anomaly))
+  :args (s/cat :matrix-and-vals-with-basis ::matrix-and-vals-with-basis)
+  :ret (s/or :sol (s/keys :req [::curve-fitting-fn ::curve-fitting-weights])
+             :anomaly ::anomalies/anomaly))
 
 ;;;SMOOTHING CUBIC SPLINES
-(s/def ::smoothing-parameter ::m/prob)
+;;; Mostly ported from https://github.com/umontreal-simul/ssj/blob/master/src/main/java/umontreal/ssj/functionfit/SmoothingCubicSpline.java
+(s/def ::smoothing-parameter ::m/open-prob)
 
 (s/def ::coefficients
   (s/coll-of
@@ -247,8 +259,8 @@
   (->Polynomial coefficients (count coefficients)))
 
 (s/fdef polynomial
-        :args (s/cat :coefficients ::coefficients)
-        :ret #(= Polynomial (type %)))
+  :args (s/cat :coefficients ::coefficients)
+  :ret #(= Polynomial (type %)))
 
 (defn- quincunx
   [^doubles u ^doubles v ^doubles w ^doubles q]
@@ -432,37 +444,39 @@
            ffirst)
       (count x-vals)))
 
+;;; See http://www.physics.muni.cz/~jancely/NM/Texty/Numerika/CubicSmoothingSpline.pdf
+;;; pages 16-21. All bindings are named to match the paper, please don't change them.
 (defn- smoothing-cubic-spline-eigenvalues*
-  [x-vals variances]
-  (let [x-count (count x-vals)
-        n (dec x-count)
-        x-diffs (vec (cons (first x-vals)
-                           (map -
-                                (rest x-vals)
-                                x-vals)))
-        x2-skip-diffs (vec (cons 0.0
-                                 (mapv #(* 2.0 (+ %1 %2))
-                                       x-diffs
-                                       (rest x-diffs))))
-        r (mapv (partial / 3.0) x-diffs)
-        x-rev-skip-diffs (vec (cons 0.0
-                                    (map #(- (+ %1 %2))
-                                         x-diffs
-                                         (rest x-diffs))))
-        R (native/dsb (dec n)
-                      1
-                      (interleave (rest x2-skip-diffs) (rest x-diffs)))
+  [xs vs]
+  (let [N (count xs)
+        n (dec N)
+        h (->> xs
+               (map - (->> xs (drop 1)))
+               (#(cons (first %) %))
+               vec)
+        p (->> h
+               (drop 1)
+               (map #(* 2.0 (+ %1 %2)) h)
+               (cons 0.0)
+               vec)
+        r (map (partial / 3.0) h)
+        f (->> r
+               (drop 1)
+               (map #(- (+ %1 %2)) r)
+               (cons 0.0)
+               vec)
+        R (native/dsb (- n 1) 1
+                      (interleave (drop 1 p) (drop 1 h)))
         S (linear-algebra/tri
             (native/dtr (:lu (linear-algebra/ptrf! (neanderthal/copy R)))))
         Q' (native/dgb (dec n)
-                       x-count
+                       N
                        0
                        2
-                       (interleave r (rest x-rev-skip-diffs) (rest r)))
+                       (interleave r (drop 1 f) (drop 1 r)))
         S-1*Q' (neanderthal/mm (neanderthal/view-ge S) (native/dge Q'))
-        K (neanderthal/mm (native/dgd x-count
-                                      (map (partial * (/ 2.0 3.0))
-                                           variances))
+        K (neanderthal/mm (native/dgd N
+                                      (map (partial * (/ 2.0 3.0)) vs))
                           (neanderthal/trans S-1*Q')
                           S-1*Q')
         d (neanderthal-mx/singular-values K)]
@@ -474,7 +488,7 @@
 (defn smoothing-cubic-spline-dof
   ""
   [{::keys [x-vals variances smoothing-parameter]}]
-  (let [d (smoothing-cubic-spline-eigenvalues x-vals variances)]
+  (anomalies/anomalous-let [d (smoothing-cubic-spline-eigenvalues x-vals variances)]
     (apply +
            (map #(/ (inc (* (m/one- smoothing-parameter)
                             (/ smoothing-parameter)
@@ -482,10 +496,10 @@
                 d))))
 
 (s/fdef smoothing-cubic-spline-dof
-        :args (s/cat :args (s/keys :req [::x-vals
-                                         ::variances
-                                         ::smoothing-parameter]))
-        :ret ::m/finite-non-)
+  :args (s/cat :args (s/keys :req [::x-vals
+                                   ::variances
+                                   ::smoothing-parameter]))
+  :ret (s/or :val ::m/finite-non- :anomaly anomalies/anomaly?))
 
 (defrecord SmoothingCubicSpline
   [polynomials x-vals variances smoothing-parameter]
@@ -516,21 +530,15 @@
      (->SmoothingCubicSpline polynomials x-vals variances smoothing-parameter))))
 
 (s/fdef smoothing-cubic-spline
-        :args (s/and (s/cat :args (s/merge ::x-vals-with-f-vals
-                                           (s/keys :req [::smoothing-parameter]))
-                            :opts (s/? (s/keys :opt [::variances])))
-                     (fn [{:keys [args opts]}]
-                       (let [{::keys [x-vals]} args
-                             variances (::variances opts)]
-                         (or (nil? variances)
-                             (= (count x-vals) (count variances))))))
-        :ret #(= SmoothingCubicSpline (type %)))
-
-;;do the x-vals need to be strictly ascending?
-;;In DOF, why does the x(0) value affect the DOF? -- currently divide by zero if x(0)=0.0
-;;add documentation
-;;maybe use spec instead of defprotocols
-;;use math/neanderthal-mx where possible -- maybe add some capabilities to neanderthal-mx
+  :args (s/and (s/cat :args (s/merge ::x-vals-with-f-vals
+                                     (s/keys :req [::smoothing-parameter]))
+                      :opts (s/? (s/keys :opt [::variances])))
+               (fn [{:keys [args opts]}]
+                 (let [{::keys [x-vals]} args
+                       variances (::variances opts)]
+                   (or (nil? variances)
+                       (= (count x-vals) (count variances))))))
+  :ret #(= SmoothingCubicSpline (type %)))
 
 
 
