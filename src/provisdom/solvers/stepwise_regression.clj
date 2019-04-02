@@ -51,7 +51,11 @@
            :ret ::independent-variables))
 
 (s/def ::extra-degrees ::m/long-non-)
-(s/def ::component-name keyword?)
+
+(s/def ::component-name
+  (s/with-gen any?
+              #(s/gen (s/or :keyword keyword?
+                            :number ::m/number))))
 
 (s/def ::component-info
   (s/keys :req [::basis-fn]
@@ -179,7 +183,9 @@
                (* 0.5
                   parameter-count
                   (m/log data-count)))]
-    (+ (m/log prior) bic)))
+    (if (zero? prior)
+      m/inf-
+      (+ (m/log prior) bic))))
 
 (s/def least-squares-bic-selection-score-fn ::selection-score-fn)
 
