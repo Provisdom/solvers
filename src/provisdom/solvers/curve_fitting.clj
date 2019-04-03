@@ -253,11 +253,12 @@
 (defn polynomial
   ""
   [coefficients]
+  (s/assert ::coefficients coefficients)
   (->Polynomial coefficients (count coefficients)))
 
-(s/fdef polynomial
-        :args (s/cat :coefficients ::coefficients)
-        :ret #(= Polynomial (type %)))
+#_(s/fdef polynomial
+    :args (s/cat :coefficients ::coefficients)
+    :ret #(= Polynomial (type %)))
 
 (defn- quincunx
   [^doubles u ^doubles v ^doubles w ^doubles q]
