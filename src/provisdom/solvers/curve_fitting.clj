@@ -97,9 +97,9 @@
   (s/merge ::x-vals-with-f-vals (s/keys :req [::basis-fn])))
 
 (s/fdef linear-least-squares-line-fitting
-  :args (s/cat :vals-with-basis ::vals-with-basis)
-  :ret (s/or :sol (s/keys :req [::line-fitting-fn ::line-fitting-weights])
-             :anomaly ::anomalies/anomaly))
+        :args (s/cat :vals-with-basis ::vals-with-basis)
+        :ret (s/or :sol (s/keys :req [::line-fitting-fn ::line-fitting-weights])
+                   :anomaly ::anomalies/anomaly))
 
 (defn b-spline-line-fitting
   "Normally returns a function that takes a finite and returns a finite or nil.
@@ -142,10 +142,10 @@
   (s/merge ::distinct-x-vals-with-f-vals (s/keys :req [::degree])))
 
 (s/fdef b-spline-line-fitting
-  :args (s/cat :vals-with-degree ::vals-with-degree)
-  :ret (s/or :sol (s/fspec :args (s/cat :finite ::m/finite)
-                           :ret (s/nilable ::m/number))
-             :anomaly ::anomalies/anomaly))
+        :args (s/cat :vals-with-degree ::vals-with-degree)
+        :ret (s/or :sol (s/fspec :args (s/cat :finite ::m/finite)
+                                 :ret (s/nilable ::m/number))
+                   :anomaly ::anomalies/anomaly))
 
 ;;;CURVE FITTING
 (defn linear-least-squares-curve-fitting
@@ -210,18 +210,15 @@
   (s/merge ::x-matrix-with-f-vals (s/keys :req [::curve-basis-fn])))
 
 (s/fdef linear-least-squares-curve-fitting
-  :args (s/cat :matrix-and-vals-with-basis ::matrix-and-vals-with-basis)
-  :ret (s/or :sol (s/keys :req [::curve-fitting-fn ::curve-fitting-weights])
-             :anomaly ::anomalies/anomaly))
+        :args (s/cat :matrix-and-vals-with-basis ::matrix-and-vals-with-basis)
+        :ret (s/or :sol (s/keys :req [::curve-fitting-fn ::curve-fitting-weights])
+                   :anomaly ::anomalies/anomaly))
 
 ;;;SMOOTHING CUBIC SPLINES
 ;;; Mostly ported from https://github.com/umontreal-simul/ssj/blob/master/src/main/java/umontreal/ssj/functionfit/SmoothingCubicSpline.java
 (s/def ::smoothing-parameter ::m/open-prob)
 
-(s/def ::coefficients
-  (s/coll-of
-    (s/double-in :infinite? false
-                 :NaN? false)))
+(s/def ::coefficients (s/coll-of ::m/double-finite))
 
 (s/def ::variances ::vector/vector-finite+)
 
@@ -259,8 +256,8 @@
   (->Polynomial coefficients (count coefficients)))
 
 (s/fdef polynomial
-  :args (s/cat :coefficients ::coefficients)
-  :ret #(= Polynomial (type %)))
+        :args (s/cat :coefficients ::coefficients)
+        :ret #(= Polynomial (type %)))
 
 (defn- quincunx
   [^doubles u ^doubles v ^doubles w ^doubles q]
@@ -489,56 +486,78 @@
   ""
   [{::keys [x-vals variances smoothing-parameter]}]
   (anomalies/anomalous-let [d (smoothing-cubic-spline-eigenvalues x-vals variances)]
-    (apply +
-           (map #(/ (inc (* (m/one- smoothing-parameter)
-                            (/ smoothing-parameter)
-                            %)))
-                d))))
+                           (apply +
+                                  (map #(/ (inc (* (m/one- smoothing-parameter)
+                                                   (/ smoothing-parameter)
+                                                   %)))
+                                       d))))
 
 (s/fdef smoothing-cubic-spline-dof
-  :args (s/cat :args (s/keys :req [::x-vals
-                                   ::variances
-                                   ::smoothing-parameter]))
-  :ret (s/or :val ::m/finite-non- :anomaly anomalies/anomaly?))
+        :args (s/cat :args (s/keys :req [::x-vals
+                                         ::variances
+                                         ::smoothing-parameter]))
+        :ret (s/or :val ::m/finite-non-
+                   :anomaly ::anomalies/anomaly))
 
-(defrecord SmoothingCubicSpline
-  [polynomials x-vals variances smoothing-parameter]
-  Function1
-  (evaluate [_ x]
-    (let [i (get-fit-polynomial-index x x-vals)]
-      (if (zero? i)
-        (evaluate (polynomials i) (- x (first x-vals)))
-        (evaluate (polynomials i) (- x (x-vals (dec i)))))))
+#_(defrecord SmoothingCubicSpline
+    [polynomials x-vals variances smoothing-parameter]
+    Function1
+    (evaluate [_ x]
+      (let [i (get-fit-polynomial-index x x-vals)]
+        (if (zero? i)
+          (evaluate (polynomials i) (- x (first x-vals)))
+          (evaluate (polynomials i) (- x (x-vals (dec i)))))))
 
-  DegreesOfFreedom
-  (dof [_]
-    (smoothing-cubic-spline-dof
-      {::x-vals              x-vals
-       ::variances           variances
-       ::smoothing-parameter smoothing-parameter})))
+    DegreesOfFreedom
+    (dof [_]
+      (smoothing-cubic-spline-dof
+        {::x-vals              x-vals
+         ::variances           variances
+         ::smoothing-parameter smoothing-parameter})))
 
 (defn smoothing-cubic-spline
-  ""
+  "Returns a map of a function `::smoothing-cubic-spline-fn` that takes and
+   returns a finite and a finite+ `::dof`.
+  `curve-basis-fn` takes and returns a vector."
   ([args] (smoothing-cubic-spline args {}))
   ([{::keys [x-vals f-vals smoothing-parameter]}
     {::keys [variances]}]
-   (let [variances (or variances (repeat (count x-vals) 1.0))
+   (let [variances (or variances (vec (repeat (count x-vals) 1.0)))
          polynomials (vec (resolver (double-array x-vals)
                                     (double-array f-vals)
                                     (double-array variances)
                                     smoothing-parameter))]
-     (->SmoothingCubicSpline polynomials x-vals variances smoothing-parameter))))
+     {::smoothing-cubic-spline-fn
+      (fn [x]
+        (let [i (get-fit-polynomial-index x x-vals)]
+          (if (zero? i)
+            (evaluate (polynomials i) (- x (first x-vals)))
+            (evaluate (polynomials i) (- x (x-vals (dec i)))))))
+      ::dof
+      ((memoize
+         (fn []
+           (smoothing-cubic-spline-dof
+             {::x-vals              x-vals
+              ::variances           variances
+              ::smoothing-parameter smoothing-parameter}))))})))
+
+(s/def ::smoothing-cubic-spline-fn
+  (s/fspec :args (s/cat :x ::m/finite)
+           :ret ::m/finite))
+
+(s/def ::dof ::m/finite+)
 
 (s/fdef smoothing-cubic-spline
-  :args (s/and (s/cat :args (s/merge ::x-vals-with-f-vals
-                                     (s/keys :req [::smoothing-parameter]))
-                      :opts (s/? (s/keys :opt [::variances])))
-               (fn [{:keys [args opts]}]
-                 (let [{::keys [x-vals]} args
-                       variances (::variances opts)]
-                   (or (nil? variances)
-                       (= (count x-vals) (count variances))))))
-  :ret #(= SmoothingCubicSpline (type %)))
+        :args (s/and (s/cat :args (s/merge ::x-vals-with-f-vals
+                                           (s/keys :req [::smoothing-parameter]))
+                            :opts (s/? (s/keys :opt [::variances])))
+                     (fn [{:keys [args opts]}]
+                       (let [{::keys [x-vals]} args
+                             variances (::variances opts)]
+                         (or (nil? variances)
+                             (= (count x-vals) (count variances))))))
+        :ret (s/keys :req [::smoothing-cubic-spline-fn ::dof])
+        #_#(= SmoothingCubicSpline (type %)))
 
 
 
