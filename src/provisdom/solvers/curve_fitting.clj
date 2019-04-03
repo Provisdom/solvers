@@ -491,14 +491,18 @@
                                   (map #(/ (inc (* (m/one- smoothing-parameter)
                                                    (/ smoothing-parameter)
                                                    %)))
+
                                        d))))
+
+(s/def ::dof (s/or :val ::m/finite-non-
+                   :nan ::m/nan
+                   :anomaly ::anomalies/anomaly))
 
 (s/fdef smoothing-cubic-spline-dof
         :args (s/cat :args (s/keys :req [::x-vals
                                          ::variances
                                          ::smoothing-parameter]))
-        :ret (s/or :val ::m/finite-non-
-                   :anomaly ::anomalies/anomaly))
+        :ret ::dof)
 
 #_(defrecord SmoothingCubicSpline
     [polynomials x-vals variances smoothing-parameter]
@@ -545,8 +549,6 @@
 (s/def ::smoothing-cubic-spline-fn
   (s/fspec :args (s/cat :x ::m/finite)
            :ret ::m/finite))
-
-(s/def ::dof ::m/finite+)
 
 (s/fdef smoothing-cubic-spline
         :args (s/and (s/cat :args (s/merge ::x-vals-with-f-vals
