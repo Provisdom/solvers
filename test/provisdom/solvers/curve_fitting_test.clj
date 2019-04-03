@@ -2,6 +2,7 @@
   (:require [clojure.test :refer :all]
             [provisdom.test.core :refer :all]
             [provisdom.solvers.curve-fitting :as curve-fitting]
+            [provisdom.solvers.curve-fitting.smoothing-spline :as smoothing-spline]
             [provisdom.math.core :as m]
             [provisdom.math.series :as series]
             [clojure.spec.test.alpha :as st]
@@ -279,25 +280,25 @@
           (::curve-fitting/curve-fitting-weights poly-20)))))
 
 (deftest smoothing-cubic-spline-dof-test
-  (is (spec-check curve-fitting/smoothing-cubic-spline-dof
+  (is (spec-check smoothing-spline/smoothing-cubic-spline-dof
                   {:fspec-iterations 0
                    :test-check       {:num-tests 1000}}))
   (is= 2.34173669467787
-       (curve-fitting/smoothing-cubic-spline-dof
-         {::curve-fitting/x-vals              [0.0 1.0 2.0 3.0]
-          ::curve-fitting/variances           [1.0 1.0 1.0 1.0]
-          ::curve-fitting/smoothing-parameter 0.5})))
+       (smoothing-spline/smoothing-cubic-spline-dof
+         {::smoothing-spline/x-vals              [0.0 1.0 2.0 3.0]
+          ::smoothing-spline/variances           [1.0 1.0 1.0 1.0]
+          ::smoothing-spline/smoothing-parameter 0.5})))
 
 (deftest smoothing-cubic-spline-test
-  (is (spec-check curve-fitting/smoothing-cubic-spline
+  (is (spec-check smoothing-spline/smoothing-cubic-spline
                   {:fspec-iterations 0
                    :test-check       {:num-tests 1000}}))
-  (let [ret (curve-fitting/smoothing-cubic-spline
-              {::curve-fitting/x-vals              [0.0 1.0 2.0 3.0]
-               ::curve-fitting/f-vals              [1.0 4.0 25.0 81.0]
-               ::curve-fitting/smoothing-parameter 0.5})
-        s-f (::curve-fitting/smoothing-cubic-spline-fn ret)]
-    (is= 2.34173669467787 (::curve-fitting/dof ret))
+  (let [ret (smoothing-spline/smoothing-cubic-spline
+              {::smoothing-spline/x-vals              [0.0 1.0 2.0 3.0]
+               ::smoothing-spline/f-vals              [1.0 4.0 25.0 81.0]
+               ::smoothing-spline/smoothing-parameter 0.5})
+        s-f (::smoothing-spline/smoothing-cubic-spline-fn ret)]
+    (is= 2.34173669467787 (::smoothing-spline/dof ret))
     (is= -24.587301587301592 (s-f -1.0))
     (is= -7.54341736694678 (s-f 0))
     (is= 10.92436974789916 (s-f 1))
