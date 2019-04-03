@@ -499,7 +499,7 @@
   :args (s/cat :args (s/keys :req [::x-vals
                                    ::variances
                                    ::smoothing-parameter]))
-  :ret (s/or :val ::m/finite-non- :anomaly anomalies/anomaly?))
+  :ret (s/or :val ::m/finite-non- :nan ::m/nan :anomaly anomalies/anomaly?))
 
 (defrecord SmoothingCubicSpline
   [polynomials x-vals variances smoothing-parameter]
