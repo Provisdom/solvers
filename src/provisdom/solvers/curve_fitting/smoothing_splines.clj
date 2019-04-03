@@ -1,4 +1,4 @@
-(ns provisdom.solvers.curve-fitting.smoothing-spline
+(ns provisdom.solvers.curve-fitting.smoothing-splines
   (:require
     [clojure.spec.alpha :as s]
     [clojure.spec.gen.alpha :as gen]
@@ -7,8 +7,6 @@
     [provisdom.utility-belt.anomalies :as anomalies]
     [provisdom.math.core :as m]
     [provisdom.math.vector :as vector]
-    [provisdom.math.matrix :as mx]
-    [incanter.interpolation :as incanter]
     [uncomplicate.neanderthal.native :as native]
     [uncomplicate.neanderthal.core :as neanderthal]
     [uncomplicate.neanderthal.linalg :as linear-algebra]
@@ -17,9 +15,7 @@
 ;;;SMOOTHING CUBIC SPLINES
 ;;; Mostly ported from https://github.com/umontreal-simul/ssj/blob/master/src/main/java/umontreal/ssj/functionfit/SmoothingCubicSpline.java
 (s/def ::smoothing-parameter ::m/open-prob)
-
 (s/def ::coefficients (s/coll-of ::m/double-finite))
-
 (s/def ::variances ::vector/vector-finite+)
 
 (s/def ::x-vals
@@ -64,9 +60,6 @@
   (derivative [this]
     "Return instance of function representing derivative"))
 
-(defprotocol DegreesOfFreedom
-  (dof [this]))
-
 (defrecord Polynomial [^doubles coefficients n]
   Function1
   (evaluate [_ x]
@@ -87,10 +80,6 @@
   [coefficients]
   (s/assert ::coefficients coefficients)
   (->Polynomial coefficients (count coefficients)))
-
-#_(s/fdef polynomial
-    :args (s/cat :coefficients ::coefficients)
-    :ret #(= Polynomial (type %)))
 
 (defn- quincunx
   [^doubles u ^doubles v ^doubles w ^doubles q]
@@ -315,48 +304,36 @@
 (def smoothing-cubic-spline-eigenvalues
   (memoize smoothing-cubic-spline-eigenvalues*))
 
-(defn smoothing-cubic-spline-dof
+(defn smoothing-cubic-splines-dof
   ""
   [{::keys [x-vals variances smoothing-parameter]}]
-  (anomalies/anomalous-let [d (smoothing-cubic-spline-eigenvalues x-vals variances)]
+  (anomalies/anomalous-let
+    [d (smoothing-cubic-spline-eigenvalues x-vals variances)]
     (apply +
            (map #(/ (inc (* (m/one- smoothing-parameter)
                             (/ smoothing-parameter)
                             %)))
-
                 d))))
 
-(s/def ::dof (s/or :val ::m/finite-non-
-                   :nan ::m/nan
-                   :anomaly ::anomalies/anomaly))
+(s/def ::smoothing-cubic-splines-fn
+  (s/fspec :args (s/cat :x ::m/finite)
+           :ret ::m/number))
 
-(s/fdef smoothing-cubic-spline-dof
-  :args (s/cat :args (s/keys :req [::x-vals
-                                   ::variances
-                                   ::smoothing-parameter]))
-  :ret ::dof)
+(s/def ::degrees-of-freedom
+  (s/or :val ::m/finite-non-
+        :nan ::m/nan
+        :anomaly ::anomalies/anomaly))
 
-#_(defrecord SmoothingCubicSpline
-    [polynomials x-vals variances smoothing-parameter]
-    Function1
-    (evaluate [_ x]
-      (let [i (get-fit-polynomial-index x x-vals)]
-        (if (zero? i)
-          (evaluate (polynomials i) (- x (first x-vals)))
-          (evaluate (polynomials i) (- x (x-vals (dec i)))))))
+(s/fdef smoothing-cubic-splines-dof
+        :args (s/cat :args (s/keys :req [::x-vals
+                                         ::variances
+                                         ::smoothing-parameter]))
+        :ret ::degrees-of-freedom)
 
-    DegreesOfFreedom
-    (dof [_]
-      (smoothing-cubic-spline-dof
-        {::x-vals              x-vals
-         ::variances           variances
-         ::smoothing-parameter smoothing-parameter})))
-
-(defn smoothing-cubic-spline
-  "Returns a map of a function `::smoothing-cubic-spline-fn` that takes and
-   returns a finite and a finite+ `::dof`.
-  `curve-basis-fn` takes and returns a vector."
-  ([args] (smoothing-cubic-spline args {}))
+(defn smoothing-cubic-splines
+  "Returns a map of a function `::smoothing-cubic-splines-fn` that takes and
+   returns a finite and a finite+ `::degrees-of-freedom`."
+  ([args] (smoothing-cubic-splines args {}))
   ([{::keys [x-vals f-vals smoothing-parameter]}
     {::keys [variances]}]
    (let [variances (or variances (vec (repeat (count x-vals) 1.0)))
@@ -364,35 +341,30 @@
                                     (double-array f-vals)
                                     (double-array variances)
                                     smoothing-parameter))]
-     {::smoothing-cubic-spline-fn
+     {::smoothing-cubic-splines-fn
       (fn [x]
         (let [i (get-fit-polynomial-index x x-vals)]
           (if (zero? i)
             (evaluate (polynomials i) (- x (first x-vals)))
             (evaluate (polynomials i) (- x (x-vals (dec i)))))))
-      ::dof
+      ::degrees-of-freedom
       ((memoize
          (fn []
-           (smoothing-cubic-spline-dof
+           (smoothing-cubic-splines-dof
              {::x-vals              x-vals
               ::variances           variances
               ::smoothing-parameter smoothing-parameter}))))})))
 
-(s/def ::smoothing-cubic-spline-fn
-  (s/fspec :args (s/cat :x ::m/finite)
-           :ret ::m/finite))
-
-(s/fdef smoothing-cubic-spline
-  :args (s/and (s/cat :args (s/merge ::x-vals-with-f-vals
-                                     (s/keys :req [::smoothing-parameter]))
-                      :opts (s/? (s/keys :opt [::variances])))
-               (fn [{:keys [args opts]}]
-                 (let [{::keys [x-vals]} args
-                       variances (::variances opts)]
-                   (or (nil? variances)
-                       (= (count x-vals) (count variances))))))
-  :ret (s/keys :req [::smoothing-cubic-spline-fn ::dof])
-  #_#(= SmoothingCubicSpline (type %)))
+(s/fdef smoothing-cubic-splines
+        :args (s/and (s/cat :args (s/merge ::x-vals-with-f-vals
+                                           (s/keys :req [::smoothing-parameter]))
+                            :opts (s/? (s/keys :opt [::variances])))
+                     (fn [{:keys [args opts]}]
+                       (let [{::keys [x-vals]} args
+                             variances (::variances opts)]
+                         (or (nil? variances)
+                             (= (count x-vals) (count variances))))))
+        :ret (s/keys :req [::smoothing-cubic-splines-fn ::degrees-of-freedom]))
 
 
 
