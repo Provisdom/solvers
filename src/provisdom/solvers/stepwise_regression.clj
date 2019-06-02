@@ -127,14 +127,23 @@
                  y-nmx)]
       (if (anomalies/anomaly? soln)
         soln
-        (let [{::neanderthal-mx/keys [mean-squared-errors solution]} soln
+        (let [{::neanderthal-mx/keys [mean-squared-errors solution condition]} soln
               mse (neanderthal-mx/neanderthal-matrix->matrix mean-squared-errors)
               sol (neanderthal-mx/neanderthal-matrix->matrix solution)
               weights (vec (flatten sol))
               error (max (ffirst mse) 0.0)]
-          (if (not-any? m/nan? weights)
+          (cond
+            (< condition 1e-8)
+            {::anomalies/message  "poorly conditioned matrix"
+             ::anomalies/category ::anomalies/exception
+             ::neanderthal-mx/condition condition
+             ::anomalies/fn       (var ordinary-stepwise-regression-fn)}
+
+            (not-any? m/nan? weights)
             {::weights weights
              ::error   error}
+
+            :else
             {::anomalies/message  "weights can't be NaN"
              ::anomalies/category ::anomalies/exception
              ::anomalies/fn       (var ordinary-stepwise-regression-fn)}))))))
