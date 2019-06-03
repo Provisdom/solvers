@@ -1,9 +1,9 @@
-{:paths     ["src"]
- :deps      {orchestra                        {:mvn/version "2019.02.06-1"}
-             provisdom/math                   {:git/url "https://github.com/Provisdom/math.git"
-                                               :sha     "441fe89cde994e6879b60ee07520aec1587f89eb"}
-             provisdom/utility-belt           {:git/url "https://github.com/Provisdom/utility-belt.git"
-                                               :sha     "41c53e48825f4426119fd5868c3d0e6843255c90"}
+{:paths   ["src"]
+ :deps    {orchestra                        {:mvn/version "2019.02.06-1"}
+           provisdom/math                   {:git/url "https://github.com/Provisdom/math.git"
+                                             :sha     "441fe89cde994e6879b60ee07520aec1587f89eb"}
+           provisdom/utility-belt           {:git/url "https://github.com/Provisdom/utility-belt.git"
+                                             :sha     "48b5d531e08e309052ea7df12ae27077d961993a"}
 
              ;;;SOLVERS
              ;;;for interpolation
