@@ -1,7 +1,7 @@
 {:paths   ["src"]
  :deps    {orchestra                        {:mvn/version "2019.02.06-1"}
            provisdom/math                   {:git/url "https://github.com/Provisdom/math.git"
-                                             :sha     "759cb13a92f833d5cd095affc19ab068cf939360"}
+                                             :sha     "45f5b6891b803ef42bdae5cc79db17849d2e1af5"}
            provisdom/utility-belt           {:git/url "https://github.com/Provisdom/utility-belt.git"
                                              :sha     "48b5d531e08e309052ea7df12ae27077d961993a"}
 
@@ -19,15 +19,15 @@
              com.joptimizer/joptimizer        {:mvn/version "5.0.0"}}
  :mvn/repos {"XypronRelease" {:url "http://rsync.xypron.de/repository"}}
  :aliases   {:dev  {:extra-paths ["siderail"]
-                    :extra-deps  {metasoarous/oz             {:mvn/version "1.4.1"}
+                    :extra-deps  {metasoarous/oz             {:mvn/version "1.5.6"}
                                   ca.umontreal.iro.simul/ssj {:mvn/version "3.3.1"}}}
              :test {:extra-paths ["test"]
                     :extra-deps  {com.cognitect/test-runner {:git/url "https://github.com/cognitect-labs/test-runner.git"
-                                                             :sha     "028a6d41ac9ac5d5c405dfc38e4da6b4cc1255d5"}
-                                  criterium                 {:mvn/version "0.4.4"}
+                                                             :sha     "cb96e80f6f3d3b307c59cbeb49bb0dcb3a2a780b"}
+                                  criterium                 {:mvn/version "0.4.5"}
                                   org.clojure/test.check    {:mvn/version "0.10.0-alpha2"}
                                   provisdom/test            {:git/url "https://github.com/Provisdom/test.git"
-                                                             :sha     "52b5b0b0f01b4b284ee81dd6673b4c01f1d78f9c"}}
+                                                             :sha     "c4ec89a9c72319b3b18287e02a61cc999332f67b"}}
                     :main-opts   ["-m" "cognitect.test-runner"
                                   "-n" "provisdom.solvers.curve-fitting-test"
                                   "-n" "provisdom.solvers.generalized-regression-neural-network-test"
