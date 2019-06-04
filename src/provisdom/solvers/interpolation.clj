@@ -263,7 +263,7 @@
 
 (defn interpolation-1D-using-derivatives
   "`data` should be a collection of seqs, where each seq contains
-  [x value & first derivative, the second derivative, and so ...]
+  [x value & first derivative, the second derivative, and so on ...]
   Uses Hermite Interpolator. Returns a function that accepts a point x and
   returns the interpolated value."
   [data]
