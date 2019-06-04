@@ -78,13 +78,13 @@
                         y1 (get f-vals index m/nan)]
                     (if (== x x1)
                       y1
-                      (let [x0 (get x-vals (dec index) m/nan)
-                            y0 (get f-vals (dec index) m/nan)
+                      (let [x0 (double (get x-vals (dec index) m/nan))
+                            y0 (double (get f-vals (dec index) m/nan))
                             z (vec (reductions
                                      (fn [tot i]
-                                       (- (* 2.0 (/ (- (get f-vals (inc i) m/nan)
+                                       (- (* 2.0 (/ (- (double (get f-vals (inc i) m/nan))
                                                        (get f-vals i m/nan))
-                                                    (- (get x-vals (inc i) m/nan)
+                                                    (- (double (get x-vals (inc i) m/nan))
                                                        (get x-vals i m/nan))))
                                           tot))
                                      (double slope)
@@ -92,7 +92,7 @@
                             [z0 z1] (subvec z (dec index) (inc index))]
                         (+ y0 (* z0 (- x x0))
                            (* 0.5
-                              (- z1 z0)
+                              (- z1 (double z0))
                               (m/sq (- x x0))
                               (/ (- x1 x0)))))))))))
 
