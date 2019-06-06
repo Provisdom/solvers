@@ -103,8 +103,8 @@
                    :anomaly ::anomalies/anomaly))
 
 (defn- recursive-unbounded
-  "Only `smaller` tuple can be nil.  `bigger` must be >= 2 and >= `smaller` + 2, and
-  `bigger-val` must be greater than `smaller-val`."
+  "Only `smaller` tuple can be nil.  `bigger` must be >= 2 and >= `smaller` + 2,
+  and `bigger-val` must be greater than `smaller-val`."
   [adj-f [smaller smaller-val] [bigger bigger-val] cap]
   (loop [[smaller smaller-val] [smaller smaller-val]
          [bigger bigger-val] [bigger bigger-val]]
