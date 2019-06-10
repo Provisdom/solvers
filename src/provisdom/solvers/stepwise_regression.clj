@@ -121,9 +121,9 @@
 
 (defn ordinary-stepwise-regression-fn
   ""
-  ([] (ordinary-stepwise-regression-fn 1e8))
+  ([] (ordinary-stepwise-regression-fn nil))
   ([condition-number-max]
-   (let [condition-number-max (or condition-number-max 1e8)]
+   (let [condition-number-max (or condition-number-max 1e15)]
      (fn [independent-variables-mx y]
        (let [y-nmx (neanderthal-mx/matrix->neanderthal-matrix
                      (mx/column-matrix y))
@@ -298,7 +298,7 @@
   `max-iter` counts both forward and backward moves (default is 10).
   `solve-type` can be `:forward`, `:backward`, or `both` (default).
   `regression-fn` uses ordinary regression by default. A `condition-number-max`
-  can be set for ordinary regression."
+  can be set for ordinary regression (default 1e15)."
   ([args] (solve args {}))
   ([{::keys [x-mx y component-group selection-score-fn prob-of-model-fn]}
     {::keys [max-iter solve-type regression-fn condition-number-max]}]
