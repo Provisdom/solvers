@@ -4,11 +4,10 @@
     [provisdom.test.core :refer :all]
     [provisdom.solvers.stepwise-regression :as stepwise]
     [provisdom.math.core :as m]
-    [provisdom.math.neanderthal-matrix :as neanderthal-mx]
     [clojure.spec.test.alpha :as st]
     [orchestra.spec.test :as ost]))
 
-;;94 seconds
+;;67 seconds
 
 (set! *warn-on-reflection* true)
 
@@ -36,8 +35,8 @@
         {::stepwise/weights [0.624874327896168 0.22810879461175296]
          ::stepwise/error   12.177883256018546}
         ((stepwise/ordinary-stepwise-regression-fn)
-          x-mx
-          y))))
+         x-mx
+         y))))
 
 (deftest logistic-stepwise-regression-fn-test
   (is (spec-check stepwise/logistic-stepwise-regression-fn
@@ -49,8 +48,8 @@
   (is= {::stepwise/weights [0.02918512018138139 -0.0516875178183345]
         ::stepwise/error   0.0}
        ((stepwise/logistic-stepwise-regression-fn)
-         x-mx
-         [0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9])))
+        x-mx
+        [0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9])))
 
 (deftest one-step-solve-test
   (is (spec-check stepwise/one-step-solve
@@ -68,48 +67,56 @@
         (update
           (stepwise/one-step-solve
             #::stepwise
-                {:x-mx                         x-mx
-                 :y                            y
-                 :regression-fn                (stepwise/ordinary-stepwise-regression-fn)
-                 :selection-score-fn           stepwise/least-squares-bic-selection-score-fn
-                 :prob-of-model-fn             prob-of-model-fn
-                 :best-component-group-info    #::stepwise
-                                                   {:score           -1000.0
-                                                    :component-group {:a {::stepwise/basis-fn
-                                                                          (fn [x]
-                                                                            [(get x 0 0.0)])}}
-                                                    :error           0.1
-                                                    :weights         [0.3]}
-                 :alternative-component-groups [{:a {::stepwise/basis-fn
-                                                     (fn [x]
-                                                       [(get x 0 0.0)])}
-                                                 :b {::stepwise/basis-fn
-                                                     (fn [x]
-                                                       [(get x 1 0.0)])}}]})
+                {:x-mx               x-mx
+                 :y                  y
+                 :regression-fn      (stepwise/ordinary-stepwise-regression-fn)
+                 :selection-score-fn stepwise/least-squares-bic-selection-score-fn
+                 :prob-of-model-fn   prob-of-model-fn
+                 :best-component-group-info
+                                     #::stepwise
+                                         {:score
+                                          -1000.0
+                                          :component-group
+                                          {:a {::stepwise/basis-fn
+                                               (fn [x]
+                                                 [(get x 0 0.0)])}}
+                                          :error
+                                          0.1
+                                          :weights
+                                          [0.3]}
+                 :alternative-component-groups
+                                     [{:a {::stepwise/basis-fn
+                                           (fn [x]
+                                             [(get x 0 0.0)])}
+                                       :b {::stepwise/basis-fn
+                                           (fn [x]
+                                             [(get x 1 0.0)])}}]})
           ::stepwise/component-group
           keys))))
 
 (deftest one-step-forward-solve-alternative-component-groups-test
   (is (spec-check stepwise/one-step-forward-solve-alternative-component-groups))
   (is= [[:a :b]]
-       (mapv keys (stepwise/one-step-forward-solve-alternative-component-groups
-                    {:a {::stepwise/basis-fn
-                         (fn [x]
-                           [(get x 0 0.0)])}}
-                    {:b {::stepwise/basis-fn
-                         (fn [x]
-                           [(get x 1 0.0)])}}))))
+       (mapv keys
+             (stepwise/one-step-forward-solve-alternative-component-groups
+               {:a {::stepwise/basis-fn
+                    (fn [x]
+                      [(get x 0 0.0)])}}
+               {:b {::stepwise/basis-fn
+                    (fn [x]
+                      [(get x 1 0.0)])}}))))
 
 (deftest one-step-backward-solve-alternative-component-groups-test
   (is (spec-check stepwise/one-step-backward-solve-alternative-component-groups))
   (is= #{'(:a) '(:b)}
-       (set (map keys (stepwise/one-step-backward-solve-alternative-component-groups
-                        {:a {::stepwise/basis-fn
-                             (fn [x]
-                               [(get x 0 0.0)])}
-                         :b {::stepwise/basis-fn
-                             (fn [x]
-                               [(get x 1 0.0)])}})))))
+       (set (map keys
+                 (stepwise/one-step-backward-solve-alternative-component-groups
+                   {:a {::stepwise/basis-fn
+                        (fn [x]
+                          [(get x 0 0.0)])}
+                    :b {::stepwise/basis-fn
+                        (fn [x]
+                          [(get x 1 0.0)])}})))))
 
 (deftest solve-test
   (is (spec-check stepwise/solve
