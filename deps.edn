@@ -1,7 +1,7 @@
 {:paths   ["src"]
  :deps    {orchestra                        {:mvn/version "2019.02.06-1"}
            provisdom/math                   {:git/url "https://github.com/Provisdom/math.git"
-                                             :sha     "412d300e7eae965157192e746802588207fbe1a9"}
+                                             :sha     "972425840cc596735fbb6601f3f1fc32a785ba4b"}
            provisdom/utility-belt           {:git/url "https://github.com/Provisdom/utility-belt.git"
                                              :sha     "48b5d531e08e309052ea7df12ae27077d961993a"}
 
