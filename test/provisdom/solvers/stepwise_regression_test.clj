@@ -125,25 +125,26 @@
                    :fspec-iterations 10
                    :recursion-limit  1
                    :test-check       {:num-tests 8}}))
-  (is= #::stepwise
-           {:score           -26.534808032342788
-            :component-group [:a]
-            :error           13.0720297305116
-            :weights         [0.81874624474264]}
-       (update
-         (stepwise/solve
-           #::stepwise
-               {:x-mx               x-mx
-                :y                  y
-                :component-group    {:a {::stepwise/basis-fn
-                                         (fn [x]
-                                           [(get x 0 0.0)])}
-                                     :b {::stepwise/basis-fn
-                                         (fn [x]
-                                           [(get x 1 0.0)])}}
-                :selection-score-fn stepwise/least-squares-bic-selection-score-fn
-                :prob-of-model-fn   prob-of-model-fn})
-         ::stepwise/component-group
-         keys)))
+  (data-approx=
+    #::stepwise
+        {:score           -26.534808032342788
+         :component-group [:a]
+         :error           13.0720297305116
+         :weights         [0.81874624474264]}
+    (update
+      (stepwise/solve
+        #::stepwise
+            {:x-mx               x-mx
+             :y                  y
+             :component-group    {:a {::stepwise/basis-fn
+                                      (fn [x]
+                                        [(get x 0 0.0)])}
+                                  :b {::stepwise/basis-fn
+                                      (fn [x]
+                                        [(get x 1 0.0)])}}
+             :selection-score-fn stepwise/least-squares-bic-selection-score-fn
+             :prob-of-model-fn   prob-of-model-fn})
+      ::stepwise/component-group
+      keys)))
 
 #_(ost/unstrument)
