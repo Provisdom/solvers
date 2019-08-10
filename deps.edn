@@ -1,9 +1,9 @@
-{:paths   ["src"]
- :deps    {orchestra                        {:mvn/version "2019.02.06-1"}
-           provisdom/math                   {:git/url "https://github.com/Provisdom/math.git"
-                                             :sha     "972425840cc596735fbb6601f3f1fc32a785ba4b"}
-           provisdom/utility-belt           {:git/url "https://github.com/Provisdom/utility-belt.git"
-                                             :sha     "48b5d531e08e309052ea7df12ae27077d961993a"}
+{:paths     ["src"]
+ :deps      {orchestra                        {:mvn/version "2019.02.06-1"}
+             provisdom/math                   {:git/url "https://github.com/Provisdom/math.git"
+                                               :sha     "ca3507b3fdfa68dc4a201df32ddc5f19057b5dcf"}
+             provisdom/utility-belt           {:git/url "https://github.com/Provisdom/utility-belt.git"
+                                               :sha     "48b5d531e08e309052ea7df12ae27077d961993a"}
 
              ;;;SOLVERS
              ;;;for interpolation
@@ -18,32 +18,16 @@
 
              com.joptimizer/joptimizer        {:mvn/version "5.0.0"}}
  :mvn/repos {"XypronRelease" {:url "http://rsync.xypron.de/repository"}}
- :aliases   {:dev  {:extra-paths ["siderail"]
-                    :extra-deps  {metasoarous/oz             {:mvn/version "1.5.6"}
-                                  ca.umontreal.iro.simul/ssj {:mvn/version "3.3.1"}}}
-             :test {:extra-paths ["test"]
-                    :extra-deps  {com.cognitect/test-runner {:git/url "https://github.com/cognitect-labs/test-runner.git"
-                                                             :sha     "cb96e80f6f3d3b307c59cbeb49bb0dcb3a2a780b"}
-                                  criterium                 {:mvn/version "0.4.5"}
-                                  org.clojure/test.check    {:mvn/version "0.10.0-alpha2"}
-                                  provisdom/test            {:git/url "https://github.com/Provisdom/test.git"
-                                                             :sha     "c4ec89a9c72319b3b18287e02a61cc999332f67b"}}
-                    :main-opts   ["-m" "cognitect.test-runner"
-                                  "-n" "provisdom.solvers.curve-fitting-test"
-                                  "-n" "provisdom.solvers.generalized-regression-neural-network-test"
-                                  "-n" "provisdom.solvers.integer-optimize-test"
-                                  "-n" "provisdom.solvers.integer-root-solvers-test"
-                                  "-n" "provisdom.solvers.internal-apache-solvers-test"
-                                  "-n" "provisdom.solvers.internal-metaheuristics-test"
-                                  "-n" "provisdom.solvers.internal-wrappers-test"
-                                  "-n" "provisdom.solvers.interpolation-test"
-                                  "-n" "provisdom.solvers.iterative-linear-least-squares-test"
-                                  "-n" "provisdom.solvers.linear-programming-test"
-                                  "-n" "provisdom.solvers.logistic-regression-test"
-                                  "-n" "provisdom.solvers.multinomial-logistic-regression-test"
-                                  "-n" "provisdom.solvers.nonlinear-constraints-without-objective-test"
-                                  "-n" "provisdom.solvers.nonlinear-programming-test"
-                                  "-n" "provisdom.solvers.optimize-univariate-test"
-                                  "-n" "provisdom.solvers.quadratic-programming-test"
-                                  "-n" "provisdom.solvers.root-solvers-test"
-                                  "-n" "provisdom.solvers.stepwise-regression-test"]}}}
+ :aliases   {:dev         {:extra-paths ["siderail"]
+                           :extra-deps  {metasoarous/oz             {:mvn/version "1.5.6"}
+                                         ca.umontreal.iro.simul/ssj {:mvn/version "3.3.1"}}}
+             :test        {:extra-paths ["test"]
+                           :extra-deps  {com.cognitect/test-runner {:git/url "https://github.com/cognitect-labs/test-runner.git"
+                                                                    :sha     "cb96e80f6f3d3b307c59cbeb49bb0dcb3a2a780b"}
+                                         criterium                 {:mvn/version "0.4.5"}
+                                         org.clojure/test.check    {:mvn/version "0.10.0-alpha2"}
+                                         provisdom/test            {:git/url "https://github.com/Provisdom/test.git"
+                                                                    :sha     "7f403360348fbb603a6d2212c164afcb2a6035e6"}}}
+             :test-runner {:extra-deps {lambdaisland/kaocha           {:mvn/version "0.0-529"}
+                                        lambdaisland/kaocha-junit-xml {:mvn/version "0.0-70"}}
+                           :main-opts  ["-m" "kaocha.runner"]}}}

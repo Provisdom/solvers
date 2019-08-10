@@ -1,7 +1,7 @@
 (ns provisdom.solvers.curve-fitting.curve-fitting-test
   (:require [clojure.test :refer :all]
             [provisdom.test.core :refer :all]
-            [provisdom.solvers.curve-fitting :as curve-fitting]
+            [provisdom.solvers.curve-fitting.curve-fitting :as curve-fitting]
             [provisdom.math.core :as m]
             [provisdom.math.series :as series]
             [clojure.spec.test.alpha :as st]
