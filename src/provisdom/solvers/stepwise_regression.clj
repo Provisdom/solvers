@@ -8,7 +8,7 @@
     [provisdom.math.core :as m]
     [provisdom.math.vector :as vector]
     [provisdom.math.matrix :as mx]
-    [provisdom.math.neanderthal-matrix :as neanderthal-mx]
+    [provisdom.neanderthal-matrix.neanderthal-matrix :as neanderthal-mx]
     [provisdom.solvers.logistic-regression :as log-regress]))
 
 (declare ordinary-stepwise-regression-fn)
