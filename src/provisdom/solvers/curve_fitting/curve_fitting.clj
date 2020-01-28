@@ -9,7 +9,7 @@
     [provisdom.math.vector :as vector]
     [provisdom.math.matrix :as mx]
     [incanter.interpolation :as incanter]
-    [provisdom.neanderthal-matrix.neanderthal-matrix :as neanderthal-mx]))
+    [provisdom.neanderthal-matrix :as neanderthal-mx]))
 
 ;;;LINE FITTING
 (s/def ::f-vals

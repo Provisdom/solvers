@@ -10,7 +10,7 @@
     [uncomplicate.neanderthal.native :as native]
     [uncomplicate.neanderthal.core :as neanderthal]
     [uncomplicate.neanderthal.linalg :as linear-algebra]
-    [provisdom.math.neanderthal-matrix :as neanderthal-mx]))
+    [provisdom.neanderthal-matrix :as neanderthal-mx]))
 
 ;;;SMOOTHING CUBIC SPLINES
 ;;; Mostly ported from https://github.com/umontreal-simul/ssj/blob/master/src/main/java/umontreal/ssj/functionfit/SmoothingCubicSpline.java
