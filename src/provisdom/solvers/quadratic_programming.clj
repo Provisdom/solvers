@@ -9,7 +9,7 @@
     [provisdom.math.vector :as vector]
     [provisdom.math.matrix :as mx]
     [provisdom.math.tensor :as tensor]
-    [provisdom.math.apache-matrix :as apache-mx]
+    [provisdom.apache-math.apache-matrix :as apache-mx]
     [provisdom.solvers.internal-wrappers :as wrap]
     [provisdom.solvers.nonlinear-programming :as nlp]))
 

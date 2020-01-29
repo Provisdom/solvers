@@ -2,7 +2,7 @@
   (:require [clojure.test :refer :all]
             [provisdom.test.core :refer :all]
             [provisdom.solvers.internal-wrappers :as wrap]
-            [provisdom.math.apache-matrix :as apache-mx]
+            [provisdom.apache-math.apache-matrix :as apache-mx]
             [clojure.spec.test.alpha :as st]
             [orchestra.spec.test :as ost]
             [provisdom.math.core :as m]))

@@ -10,7 +10,7 @@
     [provisdom.math.special-functions :as special-fns]
     [provisdom.math.vector :as vector]
     [provisdom.math.matrix :as mx]
-    [provisdom.math.apache-matrix :as apache-mx]
+    [provisdom.apache-math.apache-matrix :as apache-mx]
     [provisdom.math.tensor :as tensor]
     [provisdom.math.derivatives :as der]
     [provisdom.solvers.nonlinear-constraints-without-objective :as nlls]

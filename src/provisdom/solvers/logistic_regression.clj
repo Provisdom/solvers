@@ -9,7 +9,7 @@
     [provisdom.math.special-functions :as special-fns]
     [provisdom.math.vector :as vector]
     [provisdom.math.matrix :as mx]
-    [provisdom.math.apache-matrix :as apache-mx]
+    [provisdom.apache-math.apache-matrix :as apache-mx]
     [provisdom.math.tensor :as tensor]))
 
 (s/def ::max-iter

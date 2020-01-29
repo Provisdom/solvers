@@ -2,7 +2,7 @@
   (:require [clojure.test :refer :all]
             [provisdom.test.core :refer :all]
             [provisdom.solvers.quadratic-programming :as qp]
-            [provisdom.math.apache-matrix :as apache-mx]
+            [provisdom.apache-math.apache-matrix :as apache-mx]
             [clojure.spec.test.alpha :as st]
             [orchestra.spec.test :as ost]))
 

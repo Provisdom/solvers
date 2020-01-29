@@ -7,7 +7,7 @@
     [provisdom.utility-belt.anomalies :as anomalies]
     [provisdom.math.core :as m]
     [provisdom.math.matrix :as mx]
-    [provisdom.math.apache-matrix :as apache-mx]
+    [provisdom.apache-math.apache-matrix :as apache-mx]
     [provisdom.math.vector :as vector]
     [provisdom.math.tensor :as tensor]
     [provisdom.solvers.internal-apache-solvers :as apache-solvers]

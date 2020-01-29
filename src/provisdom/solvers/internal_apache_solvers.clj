@@ -12,8 +12,8 @@
     [provisdom.math.tensor :as tensor]
     [provisdom.math.random :as random]
     [provisdom.math.intervals :as intervals]
-    [provisdom.math.apache-vector :as apache-v]
-    [provisdom.math.apache-matrix :as apache-mx])
+    [provisdom.apache-math.apache-vector :as apache-v]
+    [provisdom.apache-math.apache-matrix :as apache-mx])
   (:import
     [java.util ArrayList]
     [org.apache.commons.math3.exception
