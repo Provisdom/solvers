@@ -3,7 +3,7 @@
              provisdom/neanderthal-matrix     {:git/url "https://github.com/Provisdom/neanderthal-matrix.git"
                                                :sha     "9d2bd9ad0cf9525effc91e4f6a3d986e30a339ac"}
              provisdom/math                   {:git/url "https://github.com/Provisdom/math.git"
-                                               :sha     "b59140d76501b7e5e56ca425ad444be900b304b5"}
+                                               :sha     "bce9e695b8dc8b741c1ef10ef4521cd138e10653"}
              provisdom/apache-math            {:git/url "https://github.com/Provisdom/apache-math.git"
                                                :sha     "0dc9f2c0af91124fddd7129f6975465580ad5019"}
              provisdom/utility-belt           {:git/url "https://github.com/Provisdom/utility-belt.git"

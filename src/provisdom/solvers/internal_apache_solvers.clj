@@ -13,7 +13,8 @@
     [provisdom.math.random :as random]
     [provisdom.math.intervals :as intervals]
     [provisdom.apache-math.apache-vector :as apache-v]
-    [provisdom.apache-math.apache-matrix :as apache-mx])
+    [provisdom.apache-math.apache-matrix :as apache-mx]
+    [provisdom.apache-math.alternative-random :as alt-random])
   (:import
     [java.util ArrayList]
     [org.apache.commons.math3.exception
@@ -824,7 +825,7 @@
          ;                            .getStatisticsMeanHistory, .getStatisticsSigmaHistory)
          generate-stats? false
          s (CMAESOptimizer. iter stop-fitness active-cma? diagonal-only
-                            check-feasible-count (random/mersenne-rng (random/rnd-long!))
+                            check-feasible-count (alt-random/mersenne-rng (random/rnd-long!))
                             generate-stats? checker)]
      (try
        ;:value has to be calculated below because it's not consistent with :point values otherwise
