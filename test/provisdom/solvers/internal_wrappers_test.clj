@@ -7,7 +7,7 @@
             [orchestra.spec.test :as ost]
             [provisdom.math.core :as m]))
 
-;;;31 seconds
+;;;20 seconds
 
 (set! *warn-on-reflection* true)
 

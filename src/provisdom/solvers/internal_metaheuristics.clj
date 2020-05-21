@@ -127,7 +127,8 @@
                                           (:seedlist @p)] seeds))))
   ;; update seed fitness
   (if DEBUG? (println "updating seed fitness..."))
-  (dorun (pmap #(eval-plantseeds % fitness) (:plantlist @population)))
+  ;; could be parallelized
+  (dorun (map #(eval-plantseeds % fitness) (:plantlist @population)))
   ;; competitive exclusion
   (if DEBUG? (println "competition..."))
   (send population competition ftype nPlantsMax 1)

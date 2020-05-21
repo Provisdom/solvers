@@ -11,6 +11,8 @@
     [provisdom.math.intervals :as intervals]
     [provisdom.solvers.internal-apache-solvers :as apache-solvers]))
 
+(s/def ::parallel? boolean?)
+
 (s/def ::one-root-solver-type
   (s/or :apache-solvers ::apache-solvers/root-solver-type
         :not-apache-solvers #{:brent-dekker :modified-newton-raphson}))
@@ -106,11 +108,11 @@
        ::anomalies/category ::anomalies/no-solve})))
 
 (s/fdef root-solver-quadratic
-        :args (s/cat :a ::m/num
-                     :b ::m/num
-                     :c ::m/num)
-        :ret (s/or :solution (s/tuple ::m/num ::m/num)
-                   :anomaly ::anomalies/anomaly))
+  :args (s/cat :a ::m/num
+               :b ::m/num
+               :c ::m/num)
+  :ret (s/or :solution (s/tuple ::m/num ::m/num)
+             :anomaly ::anomalies/anomaly))
 
 (defn- modified-newton-raphson
   "Modification dynamically alters a change factor based on previous changes.
@@ -146,11 +148,11 @@
                   (recur i x x1 x2))))))))))
 
 (s/fdef modified-newton-raphson
-        :args (s/cat :univariate-f-with-mnr-derivative-fn-and-guess ::univariate-f-with-mnr-derivative-fn-and-guess
-                     :abs-accu ::abs-accu
-                     :max-iter ::max-iter)
-        :ret (s/or :finite ::m/finite
-                   :anomaly ::anomalies/anomaly))
+  :args (s/cat :univariate-f-with-mnr-derivative-fn-and-guess ::univariate-f-with-mnr-derivative-fn-and-guess
+               :abs-accu ::abs-accu
+               :max-iter ::max-iter)
+  :ret (s/or :finite ::m/finite
+             :anomaly ::anomalies/anomaly))
 
 (defn- brent-dekker
   "References: http://en.wikipedia.org/wiki/Brent's_method"
@@ -238,11 +240,11 @@
                 (recur a fa b fb c fc d m i)))))))))
 
 (s/fdef brent-dekker
-        :args (s/cat :univariate-f-with-interval ::univariate-f-with-interval
-                     :abs-accu ::abs-accu
-                     :max-iter ::max-iter)
-        :ret (s/or :finite ::m/finite
-                   :anomaly ::anomalies/anomaly))
+  :args (s/cat :univariate-f-with-interval ::univariate-f-with-interval
+               :abs-accu ::abs-accu
+               :max-iter ::max-iter)
+  :ret (s/or :finite ::m/finite
+             :anomaly ::anomalies/anomaly))
 
 (defn- root-selector-fn
   [univariate-f interval]
@@ -280,10 +282,12 @@
   is in between."
   ([args] (root-solver args {}))
   ([{::keys [univariate-f guess interval]}
-    {::keys [max-iter rel-accu abs-accu root-solver-type mnr-derivative-fn]
+    {::keys [max-iter rel-accu abs-accu root-solver-type mnr-derivative-fn
+             parallel?]
      :or    {rel-accu         1e-6
              abs-accu         1e-14
-             root-solver-type :all}}]
+             root-solver-type :all
+             parallel?        false}}]
    (let [max-iter (or max-iter 1000)
          solvers (if-not (= :all root-solver-type)
                    root-solver-type
@@ -312,18 +316,21 @@
                            ::apache-solvers/abs-accu         abs-accu})))]
      (cond (keyword? solvers) ((solver-fn solvers))
            (m/one? (count solvers)) ((solver-fn (first solvers)))
-           :else (let [sol (async/thread-select (root-selector-fn univariate-f interval)
-                                                (map solver-fn solvers))]
+           :else (let [sol (if parallel?
+                             (async/thread-select
+                               (root-selector-fn univariate-f interval)
+                               (map solver-fn solvers)
+                               parallel?))]
                    (or sol {::anomalies/message  "No solution"
                             ::anomalies/fn       (var root-solver)
                             ::anomalies/category ::anomalies/no-solve}))))))
 
 (s/fdef root-solver
-        :args (s/cat :univariate-f-with-guess-and-interval ::univariate-f-with-guess-and-interval
-                     :opts (s/? (s/keys :opt [::max-iter
-                                              ::rel-accu
-                                              ::abs-accu
-                                              ::root-solver-type
-                                              ::mnr-derivative-fn])))
-        :ret (s/or :finite ::m/finite
-                   :anomaly ::anomalies/anomaly))
+  :args (s/cat :univariate-f-with-guess-and-interval ::univariate-f-with-guess-and-interval
+               :opts (s/? (s/keys :opt [::max-iter
+                                        ::rel-accu
+                                        ::abs-accu
+                                        ::root-solver-type
+                                        ::mnr-derivative-fn])))
+  :ret (s/or :finite ::m/finite
+             :anomaly ::anomalies/anomaly))

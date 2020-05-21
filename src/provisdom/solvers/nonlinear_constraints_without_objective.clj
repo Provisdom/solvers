@@ -11,6 +11,8 @@
     [provisdom.solvers.internal-apache-solvers :as apache-solvers]
     [provisdom.solvers.nonlinear-programming :as nlp]))
 
+(s/def ::parallel? boolean?)
+
 (defn- nls-selector-fn
   [met-accu]
   (fn [solutions]
@@ -37,7 +39,7 @@
            ::met-constraints?           (every? #(m/roughly? 0.0 % met-accu) errs)})))))
 
 (defn nonlinear-least-squares
-  "The default is to run `:all` of the solvers, or choose `:levenberg-Marquardt`
+  "The default is to run `z` of the solvers, or choose `:levenberg-Marquardt`
   or `:gauss-newton`. If there is no solution, an anomaly will be returned when
   a single solver is run, otherwise nil.
 
@@ -59,13 +61,14 @@
   ([args] (nonlinear-least-squares args {}))
   ([{::keys [constraints-fn constraint-jacobian-fn vars-guess]}
     {::keys [max-iter rel-accu abs-accu max-evaluations check-by-objective?
-             nls-solver-type constraint-weights met-accu]
+             nls-solver-type constraint-weights met-accu parallel?]
      :or    {rel-accu            1e-14
              abs-accu            1e-6
              max-evaluations     1000
              check-by-objective? false
              nls-solver-type     :all
-             met-accu            1e-6}}]
+             met-accu            1e-6
+             parallel?           false}}]
    (let [max-iter (or max-iter 1000)
          solvers (if-not (= :all nls-solver-type)
                    nls-solver-type
@@ -90,7 +93,10 @@
             ::vector-point               (::apache-solvers/vector-point solution)
             ::met-constraints?           (every? #(m/roughly? 0.0 % met-accu)
                                                  (::apache-solvers/weighted-constraint-errors solution))}))
-       (async/thread-select (nls-selector-fn met-accu) (map solver-fn solvers))))))
+       (async/thread-select
+         (nls-selector-fn met-accu)
+         (map solver-fn solvers)
+         parallel?)))))
 
 (s/def ::constraints-fn ::apache-solvers/constraints-fn)
 (s/def ::constraint-jacobian-fn ::apache-solvers/constraint-jacobian-fn)
@@ -159,16 +165,16 @@
                    ::vars-guess             [1.9 -1.9]})))))
 
 (s/fdef nonlinear-least-squares
-        :args (s/cat :constraints-with-jacobian-and-guess ::constraints-with-jacobian-and-guess
-                     :opts (s/? (s/keys :opt [::max-iter ::rel-accu ::abs-accu
-                                              ::max-evaluations ::check-by-objective?
-                                              ::nls-solver-type ::constraint-weights
-                                              ::met-accu])))
-        :ret (s/nilable
-               (s/or :solution (s/keys :req [::weighted-constraint-errors
-                                             ::vector-point
-                                             ::met-constraints?])
-                     :anomaly ::anomalies/anomaly)))
+  :args (s/cat :constraints-with-jacobian-and-guess ::constraints-with-jacobian-and-guess
+               :opts (s/? (s/keys :opt [::max-iter ::rel-accu ::abs-accu
+                                        ::max-evaluations ::check-by-objective?
+                                        ::nls-solver-type ::constraint-weights
+                                        ::met-accu])))
+  :ret (s/nilable
+         (s/or :solution (s/keys :req [::weighted-constraint-errors
+                                       ::vector-point
+                                       ::met-constraints?])
+               :anomaly ::anomalies/anomaly)))
 
 (defn- convert-constraints-fn-to-geq-fn
   [constraints-fn]
@@ -231,22 +237,24 @@
   Returns map of `::vector-point`, `::number-of-constraints-not-met`, and
   `::squared-error-of-next-constraint`.
 
-  Nonlinear programming and nonlinear least squares are run in parallel.
+  Nonlinear programming and nonlinear least squares can be run in parallel.
   Nonlinear programming is used by making the square of the last constraint the
   objective. Nonlinear least squares is used by weighting each constraint
   significantly less than the previous one."
   ([args] (nonlinear-ordered-constraints args {}))
   ([{::keys [constraints-fn constraint-jacobian-fn vars-guess]}
-    {::keys [max-iter rel-accu abs-accu check-by-objective? met-accu]
+    {::keys [max-iter rel-accu abs-accu check-by-objective? met-accu parallel?]
      :or    {rel-accu            m/dbl-close
              abs-accu            m/dbl-close
              check-by-objective? false
-             met-accu            m/sgl-close}}]
+             met-accu            m/sgl-close
+             parallel?           false}}]
    (let [max-iter (or max-iter 1000)
          constraint-count (count (constraints-fn vars-guess))
          constraint-weights (if (m/one? constraint-count)
                               (vector 1.0)
-                              (vec (concat (repeat (dec constraint-count) (/ m/sgl-close))
+                              (vec (concat (repeat (dec constraint-count)
+                                                   (/ m/sgl-close))
                                            [m/sgl-close])))
          nls #(nonlinear-least-squares
                 {::constraints-fn         constraints-fn
@@ -261,7 +269,8 @@
      (if (>= constraint-count 2)
        (let [objective (convert-constraints-fn-to-nlp-objective constraints-fn)
              sub-constraints-fn (remove-constraint-of-constraints-fn constraints-fn)
-             sub-constraint-jacobian-fn (remove-constraint-of-constraint-jacobian-fn constraint-jacobian-fn)
+             sub-constraint-jacobian-fn (remove-constraint-of-constraint-jacobian-fn
+                                          constraint-jacobian-fn)
              geq-fn (convert-constraints-fn-to-geq-fn sub-constraints-fn)
              nlp #(nlp/constrained-nonlinear-programming
                     {::nlp/objective  objective
@@ -281,7 +290,8 @@
              sol (when (> constraint-count 1)
                    (async/thread-select
                      (noc-selector-fn constraint-count met-accu)
-                     [nls nlp]))]
+                     [nls nlp]
+                     parallel?))]
          (if (::vector-point sol)
            sol
            (next)))
@@ -296,9 +306,9 @@
 (s/def ::number-of-constraints-met ::m/long-non-)
 
 (s/fdef nonlinear-ordered-constraints
-        :args (s/cat :constraints-with-jacobian-and-guess ::constraints-with-jacobian-and-guess
-                     :opts (s/? (s/keys :opt [::max-iter ::rel-accu ::abs-accu
-                                              ::check-by-objective? ::met-accu])))
-        :ret (s/nilable
-               (s/or :solution (s/keys :req [::vector-point ::number-of-constraints-met])
-                     :anomaly ::anomalies/anomaly)))
+  :args (s/cat :constraints-with-jacobian-and-guess ::constraints-with-jacobian-and-guess
+               :opts (s/? (s/keys :opt [::max-iter ::rel-accu ::abs-accu
+                                        ::check-by-objective? ::met-accu])))
+  :ret (s/nilable
+         (s/or :solution (s/keys :req [::vector-point ::number-of-constraints-met])
+               :anomaly ::anomalies/anomaly)))

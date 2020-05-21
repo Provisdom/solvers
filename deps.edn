@@ -1,13 +1,13 @@
 {:paths     ["src"]
  :deps      {orchestra                        {:mvn/version "2019.02.06-1"}
              provisdom/neanderthal-matrix     {:git/url "https://github.com/Provisdom/neanderthal-matrix.git"
-                                               :sha     "9d2bd9ad0cf9525effc91e4f6a3d986e30a339ac"}
+                                               :sha     "facd2e29732bb947a7f6cb23f149b1922a91ca06"}
              provisdom/math                   {:git/url "https://github.com/Provisdom/math.git"
-                                               :sha     "bce9e695b8dc8b741c1ef10ef4521cd138e10653"}
+                                               :sha     "b81d04e6dd2460b9e8ca49904d30299283e7b43e"}
              provisdom/apache-math            {:git/url "https://github.com/Provisdom/apache-math.git"
-                                               :sha     "0dc9f2c0af91124fddd7129f6975465580ad5019"}
+                                               :sha     "aca372fd92ee530c8c91a024dc0665d48cf0e40c"}
              provisdom/utility-belt           {:git/url "https://github.com/Provisdom/utility-belt.git"
-                                               :sha     "aa1092372d282f7e360955afc0513cdaf8e20af3"}
+                                               :sha     "1da8fbc02fb28f636ddca6ddf11c67a034f61a98"}
 
              ;;;SOLVERS
              ;;;for interpolation

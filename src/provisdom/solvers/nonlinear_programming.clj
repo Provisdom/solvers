@@ -14,6 +14,8 @@
     [provisdom.solvers.internal-wrappers :as wrap]
     [provisdom.utility-belt.async :as async]))
 
+(s/def ::parallel? boolean?)
+
 (s/def ::objective ::apache-solvers/objective)
 (s/def ::vars-guess ::apache-solvers/vars-guess)
 (s/def ::max-iter ::apache-solvers/max-iter)
@@ -97,12 +99,12 @@
                                  [m/inf- m/inf-]))})))))
 
 (s/fdef constrained-nonlinear-programming
-        :args (s/cat :objective-constraints-and-guess ::objective-constraints-and-guess
-                     :opts (s/? (s/keys :opt [::max-iter ::goal ::abs-accu
-                                              ::cobyla-initial-change
-                                              ::debug-print-level])))
-        :ret (s/or :solution (s/keys :req [::vector-point ::value])
-                   :anomaly ::anomalies/anomaly))
+  :args (s/cat :objective-constraints-and-guess ::objective-constraints-and-guess
+               :opts (s/? (s/keys :opt [::max-iter ::goal ::abs-accu
+                                        ::cobyla-initial-change
+                                        ::debug-print-level])))
+  :ret (s/or :solution (s/keys :req [::vector-point ::value])
+             :anomaly ::anomalies/anomaly))
 
 ;;;UNBOUNDED
 (defn- unbounded-selector-fn
@@ -111,10 +113,14 @@
     (when (pos? (count results))
       (reduce (fn [best next]
                 (if (and (::apache-solvers/value next)
-                         ((if (= goal :min) < >) (::apache-solvers/value next) (::apache-solvers/value best)))
+                         ((if (= goal :min) < >)
+                          (::apache-solvers/value next)
+                          (::apache-solvers/value best)))
                   next
                   best))
-              {::apache-solvers/value        (if (= goal :min) m/max-dbl m/min-dbl)
+              {::apache-solvers/value        (if (= goal :min)
+                                               m/max-dbl
+                                               m/min-dbl)
                ::apache-solvers/vector-point [m/nan m/nan]}
               results))))
 
@@ -122,7 +128,7 @@
   "Returns a map of ::vector-point and ::value.
 
   `::unbounded-solver-type` options:
-   The default, `:all`, runs all solvers simultaneously on different threads.
+   The default, `:all`, runs all solvers (can be parallel on different threads).
    Alternatively, choose one of the following, or a collection containing one or
    more of the following:
      `:cobyla`
@@ -152,20 +158,21 @@
   ([{::keys [objective vars-guess]}
     {::keys [gradient max-iter goal rel-accu abs-accu check-by-objective?
              unbounded-solver-type initial-step-size-for-conjugate-gradient
-             cobyla-initial-change]
+             cobyla-initial-change parallel?]
      :or    {goal                                     :min
              rel-accu                                 1e-14
              abs-accu                                 1e-6
              check-by-objective?                      false
              unbounded-solver-type                    :all
              initial-step-size-for-conjugate-gradient 1.0
-             cobyla-initial-change                    0.5}}]
+             cobyla-initial-change                    0.5
+             parallel?                                false}}]
    (let [max-iter (or max-iter 1000)
          gradient (or gradient (fn [da]
                                  ((derivatives/gradient-fn
                                     (fn [v]
                                       (objective (double-array v))))
-                                   (vec da))))
+                                  (vec da))))
          solvers (if-not (= :all unbounded-solver-type)
                    (if (keyword? unbounded-solver-type)
                      (list unbounded-solver-type)
@@ -214,7 +221,8 @@
                            ((solver-fn (first solvers)))
                            (async/thread-select
                              (unbounded-selector-fn goal)
-                             (map solver-fn solvers)))]
+                             (map solver-fn solvers)
+                             parallel?))]
      (cond (anomalies/anomaly? apache-solution) apache-solution
            (nil? apache-solution) {::anomalies/category ::anomalies/no-solve
                                    ::anomalies/message  "No solution."
@@ -251,14 +259,14 @@
                 ::vars-guess [0.0 0.0]})))))
 
 (s/fdef unbounded-nonlinear-programming
-        :args (s/cat :objective-with-guess ::objective-with-guess
-                     :opts (s/? (s/keys :opt [::gradient ::max-iter ::goal ::rel-accu
-                                              ::abs-accu ::check-by-objective?
-                                              ::unbounded-solver-type
-                                              ::initial-step-size-for-conjugate-gradient
-                                              ::cobyla-initial-change])))
-        :ret (s/or :solution (s/keys :req [::vector-point ::value])
-                   :anomaly ::anomalies/anomaly))
+  :args (s/cat :objective-with-guess ::objective-with-guess
+               :opts (s/? (s/keys :opt [::gradient ::max-iter ::goal ::rel-accu
+                                        ::abs-accu ::check-by-objective?
+                                        ::unbounded-solver-type
+                                        ::initial-step-size-for-conjugate-gradient
+                                        ::cobyla-initial-change])))
+  :ret (s/or :solution (s/keys :req [::vector-point ::value])
+             :anomaly ::anomalies/anomaly))
 
 ;;;BOUNDED
 (s/def ::bobyqa-interpolation-points ::apache-solvers/bobyqa-interpolation-points)
@@ -306,9 +314,14 @@
     (when (pos? (count results))
       (reduce (fn [best next]
                 (if (and (::apache-solvers/value next)
-                         ((if (= goal :min) < >) (::apache-solvers/value next) (::apache-solvers/value best))
+                         ((if (= goal :min) < >)
+                          (::apache-solvers/value next)
+                          (::apache-solvers/value best))
                          (every? (fn [[variable lower-bound upper-bound]]
-                                   (intervals/in-interval-roughly? [lower-bound upper-bound] variable met-bounds-accu))
+                                   (intervals/in-interval-roughly?
+                                     [lower-bound upper-bound]
+                                     variable
+                                     met-bounds-accu))
                                  (map vector
                                       (::apache-solvers/vector-point next)
                                       var-lower-bounds
@@ -326,7 +339,7 @@
   Returns a map of ::vector-point and ::value.
 
   `::bounded-without-evolutionary-solver-type` options:
-   The default, `:all`, runs all solvers simultaneously on different threads.
+   The default, `:all`, can runs all solvers in parallel on different threads.
    Alternatively, choose one of the following, or a collection containing one or
    more of the following:
      `:cobyla`
@@ -354,12 +367,14 @@
   ([args] (bounded-nonlinear-programming-without-evolutionary args {}))
   ([{::keys [objective vars-guess var-intervals]}
     {::keys [max-iter goal abs-accu bounded-without-evolutionary-solver-type
-             met-bounds-accu bobyqa-interpolation-points cobyla-initial-change]
+             met-bounds-accu bobyqa-interpolation-points cobyla-initial-change
+             parallel?]
      :or    {goal                                     :min
              abs-accu                                 1e-8
              bounded-without-evolutionary-solver-type :all
              met-bounds-accu                          1e-6
-             cobyla-initial-change                    0.5}}]
+             cobyla-initial-change                    0.5
+             parallel?                                false}}]
    (let [max-iter (or max-iter 1000)
          solvers (if-not (= :all bounded-without-evolutionary-solver-type)
                    (if (keyword? bounded-without-evolutionary-solver-type)
@@ -391,7 +406,8 @@
                            ((solver-fn (first solvers)))
                            (async/thread-select
                              (bounded-selector-fn goal met-bounds-accu var-lower-bounds var-upper-bounds)
-                             (map solver-fn solvers)))]
+                             (map solver-fn solvers)
+                             parallel?))]
      (cond (anomalies/anomaly? apache-solution) apache-solution
            (nil? apache-solution) {::anomalies/category ::anomalies/no-solve
                                    ::anomalies/message  "No solution."
@@ -408,13 +424,13 @@
                         :distinct true)))
 
 (s/fdef bounded-nonlinear-programming-without-evolutionary
-        :args (s/cat :objective-with-guess-and-intervals ::objective-with-guess-and-intervals
-                     :opts (s/? (s/keys :opt [::max-iter ::goal ::abs-accu
-                                              ::bounded-without-evolutionary-solver-type
-                                              ::met-bounds-accu ::bobyqa-interpolation-points
-                                              ::cobyla-initial-change])))
-        :ret (s/or :solution (s/keys :req [::vector-point ::value])
-                   :anomaly ::anomalies/anomaly))
+  :args (s/cat :objective-with-guess-and-intervals ::objective-with-guess-and-intervals
+               :opts (s/? (s/keys :opt [::max-iter ::goal ::abs-accu
+                                        ::bounded-without-evolutionary-solver-type
+                                        ::met-bounds-accu ::bobyqa-interpolation-points
+                                        ::cobyla-initial-change])))
+  :ret (s/or :solution (s/keys :req [::vector-point ::value])
+             :anomaly ::anomalies/anomaly))
 
 (defn bounded-nonlinear-programming-including-evolutionary!
   "This function always includes an evolutionary solver, unlike
@@ -500,7 +516,8 @@
     {::keys [max-iter goal rel-accu abs-accu check-by-objective?
              bounded-including-evolutionary-solver-type met-bounds-accu sigmas
              population-size stop-fitness active-cma? diagonal-only
-             check-feasible-count bobyqa-interpolation-points cobyla-initial-change]
+             check-feasible-count bobyqa-interpolation-points cobyla-initial-change
+             parallel?]
      :or    {goal                                       :min
              rel-accu                                   1e-14
              abs-accu                                   1e-8
@@ -511,7 +528,8 @@
              active-cma?                                true
              diagonal-only                              0
              check-feasible-count                       0
-             cobyla-initial-change                      0.5}}]
+             cobyla-initial-change                      0.5
+             parallel?                                  false}}]
    (let [max-iter (or max-iter 1000)
          solvers (if-not (= :all bounded-including-evolutionary-solver-type)
                    (if (keyword? bounded-including-evolutionary-solver-type)
@@ -557,7 +575,8 @@
                            ((solver-fn (first solvers)))
                            (async/thread-select
                              (bounded-selector-fn goal met-bounds-accu var-lower-bounds var-upper-bounds)
-                             (map solver-fn solvers)))]
+                             (map solver-fn solvers)
+                             parallel?))]
      (cond (anomalies/anomaly? apache-solution) apache-solution
            (nil? apache-solution) {::anomalies/category ::anomalies/no-solve
                                    ::anomalies/message  "No solution."
@@ -580,14 +599,14 @@
                         :distinct true)))
 
 (s/fdef bounded-nonlinear-programming-including-evolutionary!
-        :args (s/cat :objective-with-guess-and-intervals ::objective-with-guess-and-intervals
-                     :opts (s/? (s/keys :opt [::max-iter ::goal ::rel-accu
-                                              ::abs-accu ::check-by-objective?
-                                              ::bounded-including-evolutionary-solver-type
-                                              ::met-bounds-accu ::sigmas ::population-size
-                                              ::stop-fitness ::active-cma? ::diagonal-only
-                                              ::check-feasible-count
-                                              ::bobyqa-interpolation-points
-                                              ::cobyla-initial-change])))
-        :ret (s/or :solution (s/keys :req [::vector-point ::value])
-                   :anomaly ::anomalies/anomaly))
+  :args (s/cat :objective-with-guess-and-intervals ::objective-with-guess-and-intervals
+               :opts (s/? (s/keys :opt [::max-iter ::goal ::rel-accu
+                                        ::abs-accu ::check-by-objective?
+                                        ::bounded-including-evolutionary-solver-type
+                                        ::met-bounds-accu ::sigmas ::population-size
+                                        ::stop-fitness ::active-cma? ::diagonal-only
+                                        ::check-feasible-count
+                                        ::bobyqa-interpolation-points
+                                        ::cobyla-initial-change])))
+  :ret (s/or :solution (s/keys :req [::vector-point ::value])
+             :anomaly ::anomalies/anomaly))

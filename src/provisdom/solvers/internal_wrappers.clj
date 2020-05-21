@@ -8,7 +8,7 @@
     [provisdom.math.vector :as vector]
     [provisdom.math.matrix :as mx]
     [provisdom.math.tensor :as tensor]
-    [provisdom.math.apache-matrix :as apache-mx]
+    [provisdom.apache-math.apache-matrix :as apache-mx]
     [provisdom.math.arrays :as arrays]
     [provisdom.utility-belt.anomalies :as anomalies])
   (:import [de.xypron.jcobyla Cobyla Calcfc CobylaExitStatus]

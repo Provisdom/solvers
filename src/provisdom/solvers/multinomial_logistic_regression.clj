@@ -22,35 +22,34 @@
                                    :NaN? false))))
 
 (defn iterative-reweighted-least-squares
-  ""
+  "Could be parallelized."
   ([x-mx y-mx] (iterative-reweighted-least-squares x-mx y-mx {}))
   ([x-mx y-mx {::keys [max-iter abs-accu] :or {abs-accu 1e-15}}]
    (let [yt (mx/transpose y-mx)
-         sols (vec
-                (pmap (fn [y]
-                        (log-regress/iterative-reweighted-least-squares
-                          x-mx
-                          y
-                          {::log-regress/abs-accu abs-accu
-                           ::log-regress/max-iter max-iter}))
-                      yt))]
+         sols (mapv (fn [y]
+                      (log-regress/iterative-reweighted-least-squares
+                        x-mx
+                        y
+                        {::log-regress/abs-accu abs-accu
+                         ::log-regress/max-iter max-iter}))
+                    yt)]
      sols)))
 
 (s/fdef iterative-reweighted-least-squares
-        :args (s/and (s/cat :x-mx ::mx/matrix-finite
-                            :y-mx ::mx/matrix-prob
-                            :opts (s/? (s/keys :opt [::max-iter ::abs-accu])))
-                     (fn [{:keys [x-mx y-mx]}]
-                       (let [y-t (mx/transpose y-mx)]
-                         (and
-                           (= (mx/rows x-mx) (mx/rows y-mx))
-                           (pos? (mx/columns x-mx))
-                           (>= (mx/rows y-mx) 2)
-                           (every? (fn [y]
-                                     (and (not (every? m/one? y))
-                                          (not (every? zero? y))))
-                                   y-t)))))
-        :ret (s/coll-of (s/or :sol ::vector/vector-finite
-                              :anomaly ::anomalies/anomaly)
-                        :kind vector?
-                        :into []))
+  :args (s/and (s/cat :x-mx ::mx/matrix-finite
+                      :y-mx ::mx/matrix-prob
+                      :opts (s/? (s/keys :opt [::max-iter ::abs-accu])))
+               (fn [{:keys [x-mx y-mx]}]
+                 (let [y-t (mx/transpose y-mx)]
+                   (and
+                     (= (mx/rows x-mx) (mx/rows y-mx))
+                     (pos? (mx/columns x-mx))
+                     (>= (mx/rows y-mx) 2)
+                     (every? (fn [y]
+                               (and (not (every? m/one? y))
+                                    (not (every? zero? y))))
+                             y-t)))))
+  :ret (s/coll-of (s/or :sol ::vector/vector-finite
+                        :anomaly ::anomalies/anomaly)
+                  :kind vector?
+                  :into []))
