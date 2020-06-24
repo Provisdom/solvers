@@ -3,11 +3,10 @@
     [clojure.test :refer :all]
     [provisdom.test.core :refer :all]
     [provisdom.solvers.neanderthal.stepwise-regression :as stepwise]
-    [provisdom.math.core :as m]
     [clojure.spec.test.alpha :as st]
     [orchestra.spec.test :as ost]))
 
-;;67 seconds
+;;61 seconds
 
 (set! *warn-on-reflection* true)
 
@@ -24,25 +23,10 @@
   [component-group]
   1.0)
 
-(deftest ordinary-regression-test
-  (is (spec-check stepwise/ordinary-regression
-                  {:coll-check-limit 10
-                   :coll-error-limit 10
-                   :fspec-iterations 10
-                   :recursion-limit  1
-                   :test-check       {:num-tests 300}}))
-  (is (data-approx=
-        {::stepwise/weights [0.624874327896168 0.22810879461175296]
-         ::stepwise/error   12.177883256018546}
-        (stepwise/ordinary-regression x-mx y))))
-
 (deftest ordinary-stepwise-regression-fn-test
   (is (spec-check stepwise/ordinary-stepwise-regression-fn
-                  {:coll-check-limit 10
-                   :coll-error-limit 10
-                   :fspec-iterations 10
-                   :recursion-limit  1
-                   :test-check       {:num-tests 300}}))
+                  {:fspec-iterations 1
+                   :num-tests        300}))
   (is (data-approx=
         {::stepwise/weights [0.624874327896168 0.22810879461175296]
          ::stepwise/error   12.177883256018546}
@@ -52,11 +36,8 @@
 
 (deftest logistic-stepwise-regression-fn-test
   (is (spec-check stepwise/logistic-stepwise-regression-fn
-                  {:coll-check-limit 10
-                   :coll-error-limit 10
-                   :fspec-iterations 10
-                   :recursion-limit  1
-                   :test-check       {:num-tests 250}}))
+                  {:fspec-iterations 1
+                   :num-tests        250}))
   (is= {::stepwise/weights [0.02918512018138139 -0.0516875178183345]
         ::stepwise/error   0.0}
        ((stepwise/logistic-stepwise-regression-fn)
@@ -65,11 +46,9 @@
 
 (deftest one-step-solve-test
   (is (spec-check stepwise/one-step-solve
-                  {:coll-check-limit 10
-                   :coll-error-limit 10
-                   :fspec-iterations 10
-                   :recursion-limit  1
-                   :test-check       {:num-tests 5}}))
+                  {:fspec-iterations 1
+                   :num-tests        1
+                   :seed             1593020379082}))
   (is (data-approx=
         #::stepwise
             {:score           -27.31458022888188
@@ -131,12 +110,8 @@
                           [(get x 1 0.0)])}})))))
 
 (deftest solve-test
-  (is (spec-check stepwise/solve
-                  {:coll-check-limit 10
-                   :coll-error-limit 10
-                   :fspec-iterations 10
-                   :recursion-limit  1
-                   :test-check       {:num-tests 8}}))
+  (is (spec-check stepwise/solve {:fspec-iterations 1
+                                  :num-tests        8}))
   (data-approx=
     #::stepwise
         {:score           -26.534808032342788
