@@ -1,4 +1,4 @@
-(ns provisdom.solvers.stepwise-regression
+(ns provisdom.solvers.neanderthal.stepwise-regression
   (:require
     [clojure.spec.alpha :as s]
     [clojure.spec.gen.alpha :as gen]
@@ -8,7 +8,7 @@
     [provisdom.math.core :as m]
     [provisdom.math.vector :as vector]
     [provisdom.math.matrix :as mx]
-    [provisdom.neanderthal-matrix :as neanderthal-mx]
+    [provisdom.neanderthal-matrix.core :as neanderthal-mx]
     [provisdom.solvers.logistic-regression :as log-regress]))
 
 (declare ordinary-stepwise-regression-fn)
@@ -119,48 +119,60 @@
               #(gen/one-of [(gen/return 1e8)
                             (gen/return nil)])))
 
+(defn ordinary-regression
+  ""
+  ([independent-variables-mx y]
+   (ordinary-regression independent-variables-mx y {}))
+  ([independent-variables-mx y
+    {::keys [condition-number-max]
+     :or    {condition-number-max 1e15}}]
+   (let [y-nmx (neanderthal-mx/matrix->neanderthal-matrix
+                 (mx/column-matrix y))
+         ind-vars-nmx (neanderthal-mx/matrix->neanderthal-matrix
+                        independent-variables-mx)
+         soln (neanderthal-mx/lls-with-error
+                ind-vars-nmx
+                y-nmx)]
+     (if (anomalies/anomaly? soln)
+       soln
+       (let [{::neanderthal-mx/keys [mean-squared-errors
+                                     solution
+                                     condition-number]} soln
+             mse (neanderthal-mx/neanderthal-matrix->matrix mean-squared-errors)
+             sol (neanderthal-mx/neanderthal-matrix->matrix solution)
+             weights (vec (flatten sol))
+             error (max (ffirst mse) 0.0)]
+         (cond
+           (> condition-number condition-number-max)
+           {::anomalies/message               "poorly conditioned matrix"
+            ::anomalies/category              ::anomalies/exception
+            ::neanderthal-mx/condition-number condition-number
+            ::condition-number-max            condition-number-max
+            ::anomalies/fn                    (var ordinary-regression)}
+
+           (not-any? m/nan? weights)
+           {::weights weights
+            ::error   error}
+
+           :else
+           {::anomalies/message  "weights can't be NaN"
+            ::anomalies/category ::anomalies/exception
+            ::anomalies/fn       (var ordinary-regression)}))))))
+
 (defn ordinary-stepwise-regression-fn
   ""
   ([] (ordinary-stepwise-regression-fn nil))
   ([condition-number-max]
    (let [condition-number-max (or condition-number-max 1e15)]
      (fn [independent-variables-mx y]
-       (let [y-nmx (neanderthal-mx/matrix->neanderthal-matrix
-                     (mx/column-matrix y))
-             ind-vars-nmx (neanderthal-mx/matrix->neanderthal-matrix
-                            independent-variables-mx)
-             soln (neanderthal-mx/lls-with-error
-                    ind-vars-nmx
-                    y-nmx)]
-         (if (anomalies/anomaly? soln)
-           soln
-           (let [{::neanderthal-mx/keys [mean-squared-errors
-                                         solution
-                                         condition-number]} soln
-                 mse (neanderthal-mx/neanderthal-matrix->matrix mean-squared-errors)
-                 sol (neanderthal-mx/neanderthal-matrix->matrix solution)
-                 weights (vec (flatten sol))
-                 error (max (ffirst mse) 0.0)]
-             (cond
-               (> condition-number condition-number-max)
-               {::anomalies/message               "poorly conditioned matrix"
-                ::anomalies/category              ::anomalies/exception
-                ::neanderthal-mx/condition-number condition-number
-                ::condition-number-max            condition-number-max
-                ::anomalies/fn                    (var ordinary-stepwise-regression-fn)}
-
-               (not-any? m/nan? weights)
-               {::weights weights
-                ::error   error}
-
-               :else
-               {::anomalies/message  "weights can't be NaN"
-                ::anomalies/category ::anomalies/exception
-                ::anomalies/fn       (var ordinary-stepwise-regression-fn)}))))))))
+       (ordinary-regression
+         independent-variables-mx
+         y
+         {::condition-number-max condition-number-max})))))
 
 (s/fdef ordinary-stepwise-regression-fn
-        :args (s/cat :condition-number-max (s/? ::condition-number-max))
-        :ret ::regression-fn)
+  :args (s/cat :condition-number-max (s/? ::condition-number-max))
+  :ret ::regression-fn)
 
 (defn logistic-stepwise-regression-fn
   ""
@@ -187,9 +199,9 @@
         ::anomalies/fn       (var logistic-stepwise-regression-fn)}))))
 
 (s/fdef logistic-stepwise-regression-fn
-        :args (s/cat :opts (s/? (s/keys :opt [::log-regress/max-iter
-                                              ::log-regress/abs-accu])))
-        :ret ::regression-fn)
+  :args (s/cat :opts (s/? (s/keys :opt [::log-regress/max-iter
+                                        ::log-regress/abs-accu])))
+  :ret ::regression-fn)
 
 (defn least-squares-bic-selection-score-fn
   [{::keys [prior error data-count parameter-count]}]
@@ -259,16 +271,16 @@
     new-best))
 
 (s/fdef one-step-solve
-        :args (s/cat :args (s/and (s/keys :req [::x-mx
-                                                ::y
-                                                ::regression-fn
-                                                ::selection-score-fn
-                                                ::prob-of-model-fn
-                                                ::best-component-group-info
-                                                ::alternative-component-groups])
-                                  (fn [{::keys [x-mx y]}]
-                                    (= (mx/rows x-mx) (count y)))))
-        :ret ::best-component-group-info)
+  :args (s/cat :args (s/and (s/keys :req [::x-mx
+                                          ::y
+                                          ::regression-fn
+                                          ::selection-score-fn
+                                          ::prob-of-model-fn
+                                          ::best-component-group-info
+                                          ::alternative-component-groups])
+                            (fn [{::keys [x-mx y]}]
+                              (= (mx/rows x-mx) (count y)))))
+  :ret ::best-component-group-info)
 
 (defn one-step-forward-solve-alternative-component-groups
   ""
@@ -278,9 +290,9 @@
         component-group))
 
 (s/fdef one-step-forward-solve-alternative-component-groups
-        :args (s/cat :best-component-group ::component-group
-                     :component-group ::component-group)
-        :ret ::alternative-component-groups)
+  :args (s/cat :best-component-group ::component-group
+               :component-group ::component-group)
+  :ret ::alternative-component-groups)
 
 (defn one-step-backward-solve-alternative-component-groups
   ""
@@ -290,8 +302,8 @@
         best-component-group))
 
 (s/fdef one-step-backward-solve-alternative-component-groups
-        :args (s/cat :best-component-group ::component-group)
-        :ret ::alternative-component-groups)
+  :args (s/cat :best-component-group ::component-group)
+  :ret ::alternative-component-groups)
 
 (defn solve
   "Optional:
@@ -359,15 +371,15 @@
                     (= new-best best-component-group-info)))))))))
 
 (s/fdef solve
-        :args (s/cat :args (s/and (s/keys :req [::x-mx
-                                                ::y
-                                                ::component-group
-                                                ::selection-score-fn
-                                                ::prob-of-model-fn])
-                                  (fn [{::keys [x-mx y]}]
-                                    (= (mx/rows x-mx) (count y))))
-                     :opts (s/? (s/keys :opt [::max-iter
-                                              ::solve-type
-                                              ::regression-fn
-                                              ::condition-number-max])))
-        :ret ::best-component-group-info)
+  :args (s/cat :args (s/and (s/keys :req [::x-mx
+                                          ::y
+                                          ::component-group
+                                          ::selection-score-fn
+                                          ::prob-of-model-fn])
+                            (fn [{::keys [x-mx y]}]
+                              (= (mx/rows x-mx) (count y))))
+               :opts (s/? (s/keys :opt [::max-iter
+                                        ::solve-type
+                                        ::regression-fn
+                                        ::condition-number-max])))
+  :ret ::best-component-group-info)

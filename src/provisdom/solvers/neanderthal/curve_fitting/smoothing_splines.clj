@@ -1,4 +1,4 @@
-(ns provisdom.solvers.curve-fitting.smoothing-splines
+(ns provisdom.solvers.neanderthal.curve-fitting.smoothing-splines
   (:require
     [clojure.spec.alpha :as s]
     [clojure.spec.gen.alpha :as gen]
@@ -7,10 +7,10 @@
     [provisdom.utility-belt.anomalies :as anomalies]
     [provisdom.math.core :as m]
     [provisdom.math.vector :as vector]
+    [provisdom.neanderthal-matrix.core :as neanderthal-mx]
     [uncomplicate.neanderthal.native :as native]
     [uncomplicate.neanderthal.core :as neanderthal]
-    [uncomplicate.neanderthal.linalg :as linear-algebra]
-    [provisdom.neanderthal-matrix :as neanderthal-mx]))
+    [uncomplicate.neanderthal.linalg :as linear-algebra]))
 
 ;;;SMOOTHING CUBIC SPLINES
 ;;; Mostly ported from https://github.com/umontreal-simul/ssj/blob/master/src/main/java/umontreal/ssj/functionfit/SmoothingCubicSpline.java

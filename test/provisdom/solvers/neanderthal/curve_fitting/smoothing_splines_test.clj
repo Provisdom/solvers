@@ -1,7 +1,7 @@
-(ns provisdom.solvers.curve-fitting.smoothing-splines-test
+(ns provisdom.solvers.neanderthal.curve-fitting.smoothing-splines-test
   (:require [clojure.test :refer :all]
             [provisdom.test.core :refer :all]
-            [provisdom.solvers.curve-fitting.smoothing-splines :as splines]
+            [provisdom.solvers.neanderthal.curve-fitting.smoothing-splines :as splines]
             [clojure.spec.test.alpha :as st]
             [orchestra.spec.test :as ost]))
 

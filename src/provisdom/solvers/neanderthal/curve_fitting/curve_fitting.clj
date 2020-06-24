@@ -1,4 +1,4 @@
-(ns provisdom.solvers.curve-fitting.curve-fitting
+(ns provisdom.solvers.neanderthal.curve-fitting.curve-fitting
   (:require
     [clojure.spec.alpha :as s]
     [clojure.spec.gen.alpha :as gen]
@@ -8,8 +8,8 @@
     [provisdom.math.core :as m]
     [provisdom.math.vector :as vector]
     [provisdom.math.matrix :as mx]
-    [incanter.interpolation :as incanter]
-    [provisdom.neanderthal-matrix :as neanderthal-mx]))
+    [provisdom.neanderthal-matrix.core :as neanderthal-mx]
+    [incanter.interpolation :as incanter]))
 
 ;;;LINE FITTING
 (s/def ::f-vals

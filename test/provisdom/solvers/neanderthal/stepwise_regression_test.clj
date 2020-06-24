@@ -1,8 +1,8 @@
-(ns provisdom.solvers.stepwise-regression-test
+(ns provisdom.solvers.neanderthal.stepwise-regression-test
   (:require
     [clojure.test :refer :all]
     [provisdom.test.core :refer :all]
-    [provisdom.solvers.stepwise-regression :as stepwise]
+    [provisdom.solvers.neanderthal.stepwise-regression :as stepwise]
     [provisdom.math.core :as m]
     [clojure.spec.test.alpha :as st]
     [orchestra.spec.test :as ost]))
@@ -23,6 +23,18 @@
 (defn prob-of-model-fn
   [component-group]
   1.0)
+
+(deftest ordinary-regression-test
+  (is (spec-check stepwise/ordinary-regression
+                  {:coll-check-limit 10
+                   :coll-error-limit 10
+                   :fspec-iterations 10
+                   :recursion-limit  1
+                   :test-check       {:num-tests 300}}))
+  (is (data-approx=
+        {::stepwise/weights [0.624874327896168 0.22810879461175296]
+         ::stepwise/error   12.177883256018546}
+        (stepwise/ordinary-regression x-mx y))))
 
 (deftest ordinary-stepwise-regression-fn-test
   (is (spec-check stepwise/ordinary-stepwise-regression-fn

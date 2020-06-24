@@ -1,4 +1,4 @@
-(ns provisdom.solvers.beta-regression
+(ns provisdom.solvers.neanderthal.beta-regression
   (:require
     [clojure.spec.alpha :as s]
     [clojure.spec.gen.alpha :as gen]
@@ -10,15 +10,14 @@
     [provisdom.math.special-functions :as special-fns]
     [provisdom.math.vector :as vector]
     [provisdom.math.matrix :as mx]
-    [provisdom.apache-math.apache-matrix :as apache-mx]
     [provisdom.math.tensor :as tensor]
     [provisdom.math.derivatives :as der]
+    [provisdom.apache-math.apache-matrix :as apache-mx]
     [provisdom.solvers.nonlinear-constraints-without-objective :as nlls]
     [provisdom.solvers.nonlinear-programming :as nlp]
     [uncomplicate.neanderthal.native :as nat]
     [uncomplicate.neanderthal.core :as n]
-    [uncomplicate.neanderthal.vect-math :as vec]
-    [provisdom.math.special-functions :as sfn]))
+    [uncomplicate.neanderthal.vect-math :as vec]))
 
 (defn descent [f g xs error rate epochs]
   (let [ns (range (count xs))
@@ -40,12 +39,12 @@
 (defn digamma
   [work x]
   (n/copy! x work)
-  (n/alter! work (fn ^double [^long _ ^double x] (sfn/digamma x)))
+  (n/alter! work (fn ^double [^long _ ^double x] (special-fns/digamma x)))
   work)
 
 (defn digamma!
   [x]
-  (n/alter! x (fn ^double [^long _ ^double x] (sfn/digamma x)))
+  (n/alter! x (fn ^double [^long _ ^double x] (special-fns/digamma x)))
   x)
 
 (defn logit
