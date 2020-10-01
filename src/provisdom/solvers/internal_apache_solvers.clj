@@ -32,7 +32,8 @@
      OptimizationData InitialGuess SimpleBounds PointValuePair
      SimpleValueChecker SimplePointChecker SimpleVectorValueChecker MaxEval]
     [org.apache.commons.math3.optim.univariate
-     BrentOptimizer SearchInterval UnivariateObjectiveFunction UnivariatePointValuePair]
+     BrentOptimizer SearchInterval UnivariateObjectiveFunction
+     UnivariatePointValuePair]
     [org.apache.commons.math3.optim.linear
      SimplexSolver LinearObjectiveFunction LinearConstraintSet LinearConstraint
      Relationship NonNegativeConstraint]
@@ -40,20 +41,23 @@
      GoalType ObjectiveFunction ObjectiveFunctionGradient]
     [org.apache.commons.math3.optim.nonlinear.scalar.noderiv
      SimplexOptimizer MultiDirectionalSimplex NelderMeadSimplex PowellOptimizer
-     BOBYQAOptimizer CMAESOptimizer CMAESOptimizer$Sigma CMAESOptimizer$PopulationSize]
+     BOBYQAOptimizer CMAESOptimizer CMAESOptimizer$Sigma
+     CMAESOptimizer$PopulationSize]
     [org.apache.commons.math3.optim.nonlinear.scalar.gradient
-     NonLinearConjugateGradientOptimizer NonLinearConjugateGradientOptimizer$BracketingStep
+     NonLinearConjugateGradientOptimizer
+     NonLinearConjugateGradientOptimizer$BracketingStep
      NonLinearConjugateGradientOptimizer$Formula]
     [org.apache.commons.math3.fitting.leastsquares
      LevenbergMarquardtOptimizer GaussNewtonOptimizer LeastSquaresFactory
      LeastSquaresProblem$Evaluation]
     [org.apache.commons.math3.analysis.interpolation
-     BicubicInterpolator BicubicInterpolatingFunction PiecewiseBicubicSplineInterpolator
+     BicubicInterpolator BicubicInterpolatingFunction
+     PiecewiseBicubicSplineInterpolator
      PiecewiseBicubicSplineInterpolatingFunction TricubicInterpolator
-     TricubicInterpolatingFunction DividedDifferenceInterpolator HermiteInterpolator
-     LinearInterpolator LoessInterpolator MicrosphereInterpolator
-     NevilleInterpolator SplineInterpolator AkimaSplineInterpolator
-     UnivariatePeriodicInterpolator]
+     TricubicInterpolatingFunction DividedDifferenceInterpolator
+     HermiteInterpolator LinearInterpolator LoessInterpolator
+     MicrosphereInterpolator NevilleInterpolator SplineInterpolator
+     AkimaSplineInterpolator UnivariatePeriodicInterpolator]
     [org.apache.commons.math3.linear
      RealMatrix RealVector ConjugateGradient SymmLQ
      PreconditionedIterativeLinearSolver RealLinearOperator]))
@@ -64,7 +68,8 @@
 ;;;org.apache.commons.math3.ml.clustering (Clustering algorithms)
 ;;;org.apache.commons.math3.ode + subcategories (ODE)
 
-(def mdl 6)                                                 ;max-dim-length for generators
+;;max-dim-length for generators
+(def mdl 6)
 
 (s/def ::max-iter
   (s/with-gen (s/nilable ::m/int+)
@@ -97,7 +102,8 @@
          (fn [v]
            (pos? (count v)))))
 
-;;note that accu's must be >= 9e-16 (or at least 3e-16), otherwise Apache thinks it's zero
+;;note that accu's must be >= 9e-16 (or at least 3e-16),
+;; otherwise Apache thinks it's zero
 (def accu-precision 9e-16)
 
 (s/def ::rel-accu
@@ -155,7 +161,8 @@
 (defn- ^MultivariateMatrixFunction multivariate-matrix-function
   "`f` is a function that takes a vector and returns a matrix."
   [f]
-  (reify MultivariateMatrixFunction (value [_ v] (arrays/array2D :double (f v)))))
+  (reify MultivariateMatrixFunction
+    (value [_ v] (arrays/array2D :double (f v)))))
 
 (defn- ^UnivariateDifferentiableFunction univariate-differentiable-function
   "`deriv-fn` is a function that takes and returns a number."
@@ -165,7 +172,8 @@
      (univariate-function deriv-fn)))
   ([deriv-fn points step-size var-low-bound var-high-bound]
    (.differentiate
-     (FiniteDifferencesDifferentiator. points step-size var-low-bound var-high-bound)
+     (FiniteDifferencesDifferentiator.
+       points step-size var-low-bound var-high-bound)
      (univariate-function deriv-fn))))
 
 ;;;OPTIMIZATION HELPERS
@@ -181,8 +189,10 @@
 
 (defn- ->weighted-constraint-errors-and-vector-point-map
   [^LeastSquaresProblem$Evaluation e]
-  {::vector-point               (apache-v/apache-vector->vector (.getPoint e))
-   ::weighted-constraint-errors (apache-v/apache-vector->vector (.getResiduals e))})
+  {::vector-point               (apache-v/apache-vector->vector
+                                  (.getPoint e))
+   ::weighted-constraint-errors (apache-v/apache-vector->vector
+                                  (.getResiduals e))})
 
 (defn- goal-fn
   [goal]
@@ -253,7 +263,8 @@
        (let [^BaseUnivariateSolver s
              (case root-solver-type
                :bisection (BisectionSolver. rel-accu abs-accu)
-               :bracketing-nth-order-brent (BracketingNthOrderBrentSolver. rel-accu abs-accu 5)
+               :bracketing-nth-order-brent (BracketingNthOrderBrentSolver.
+                                             rel-accu abs-accu 5)
                :brent (BrentSolver. rel-accu abs-accu)
                :illinois (IllinoisSolver. rel-accu abs-accu)
                :muller (MullerSolver. rel-accu abs-accu)
@@ -271,10 +282,14 @@
                          ::anomalies/category ::anomalies/third-party}))))))))
 
 (s/fdef root-solver
-        :args (s/cat :univariate-f-with-interval-and-guess ::univariate-f-with-interval-and-guess
-                     :opts (s/? (s/keys :opt [::max-iter ::root-solver-type ::rel-accu ::abs-accu])))
-        :ret (s/nilable (s/or :finite ::m/finite
-                              :anomaly ::anomalies/anomaly)))
+  :args (s/cat :univariate-f-with-interval-and-guess
+               ::univariate-f-with-interval-and-guess
+               :opts (s/? (s/keys :opt [::max-iter
+                                        ::root-solver-type
+                                        ::rel-accu
+                                        ::abs-accu])))
+  :ret (s/nilable (s/or :finite ::m/finite
+                        :anomaly ::anomalies/anomaly)))
 
 ;;;UNIVARIATE OPTIMIZE
 (defn optimize-univariate
@@ -306,18 +321,21 @@
           ::anomalies/category ::anomalies/third-party})))))
 
 (s/fdef optimize-univariate
-        :args (s/and (s/cat :univariate-f ::univariate-f
-                            :finite-interval ::finite-interval
-                            :initial-guess ::initial-guess
-                            :opts (s/? (s/keys :opts [::max-iter ::goal ::rel-accu ::abs-accu])))
-                     (fn [{:keys [finite-interval initial-guess]}]
-                       (and (< (first finite-interval)
-                               (second finite-interval))
-                            (intervals/in-bounds?
-                              (intervals/bounds finite-interval true false)
-                              initial-guess))))
-        :ret (s/or :solution ::value-and-point
-                   :anomaly ::anomalies/anomaly))
+  :args (s/and (s/cat :univariate-f ::univariate-f
+                      :finite-interval ::finite-interval
+                      :initial-guess ::initial-guess
+                      :opts (s/? (s/keys :opts [::max-iter
+                                                ::goal
+                                                ::rel-accu
+                                                ::abs-accu])))
+               (fn [{:keys [finite-interval initial-guess]}]
+                 (and (< (first finite-interval)
+                         (second finite-interval))
+                      (intervals/in-bounds?
+                        (intervals/bounds finite-interval true false)
+                        initial-guess))))
+  :ret (s/or :solution ::value-and-point
+             :anomaly ::anomalies/anomaly))
 
 ;;;LINEAR PROGRAMMING
 (defn- linear-constraint->apache-linear-constraint
@@ -392,15 +410,16 @@
 (s/def ::non-negative-vars? boolean?)
 
 (s/fdef linear-programming
-        :args (s/and (s/cat :objective-coefficients ::vector/vector-finite
-                            :linear-constraints ::linear-constraints
-                            :opts (s/? (s/keys :opts [::goal
-                                                      ::objective-constant
-                                                      ::non-negative-vars?])))
-                     (fn [{:keys [objective-coefficients linear-constraints]}]
-                       (= (count objective-coefficients) (count (ffirst linear-constraints)))))
-        :ret (s/or :solution ::value-and-vector-point
-                   :anomaly ::anomalies/anomaly))
+  :args (s/and (s/cat :objective-coefficients ::vector/vector-finite
+                      :linear-constraints ::linear-constraints
+                      :opts (s/? (s/keys :opts [::goal
+                                                ::objective-constant
+                                                ::non-negative-vars?])))
+               (fn [{:keys [objective-coefficients linear-constraints]}]
+                 (= (count objective-coefficients)
+                    (count (ffirst linear-constraints)))))
+  :ret (s/or :solution ::value-and-vector-point
+             :anomaly ::anomalies/anomaly))
 
 ;;;ITERATIVE LINEAR LEAST SQUARES
 (defn iterative-linear-least-squares
@@ -467,18 +486,19 @@
 (s/def ::check-for-positive-definiteness? boolean?)
 
 (s/fdef iterative-linear-least-squares
-        :args (s/and (s/cat :symmetric-m ::mx/symmetric-matrix
-                            :v ::vector/vector-finite
-                            :opts (s/? (s/keys :opt [::max-iter
-                                                     ::rel-accu
-                                                     ::use-conjugate-gradient?
-                                                     ::vector-initial-guess
-                                                     ::check-for-positive-definiteness?])))
-                     (fn [{:keys [symmetric-m v]}]
-                       (and (= (mx/rows symmetric-m) (count v))
-                            (pos? (count v)))))
-        :ret (s/or :solution ::vector/vector
-                   :anomaly ::anomalies/anomaly))
+  :args (s/and (s/cat :symmetric-m ::mx/symmetric-matrix
+                      :v ::vector/vector-finite
+                      :opts (s/? (s/keys :opt
+                                         [::max-iter
+                                          ::rel-accu
+                                          ::use-conjugate-gradient?
+                                          ::vector-initial-guess
+                                          ::check-for-positive-definiteness?])))
+               (fn [{:keys [symmetric-m v]}]
+                 (and (= (mx/rows symmetric-m) (count v))
+                      (pos? (count v)))))
+  :ret (s/or :solution ::vector/vector
+             :anomaly ::anomalies/anomaly))
 
 ;;;NONLINEAR LEAST SQUARES and SYSTEMS
 (defn nonlinear-least-squares
@@ -521,8 +541,10 @@
          start (apache-v/apache-vector vars-guess)
          weights (if (and (some? constraint-weights)
                           (= (count constraint-weights) constraint-count))
-                   (apache-mx/apache-matrix (mx/diagonal-matrix constraint-weights))
-                   (apache-mx/apache-matrix (mx/diagonal-matrix (repeat constraint-count 1.0))))]
+                   (apache-mx/apache-matrix
+                     (mx/diagonal-matrix constraint-weights))
+                   (apache-mx/apache-matrix
+                     (mx/diagonal-matrix (repeat constraint-count 1.0))))]
      (try
        (when s
          (let [multivariate-jacobian-fn (LeastSquaresFactory/model c j)
@@ -532,11 +554,13 @@
                e (.optimize s problem)]
            (->weighted-constraint-errors-and-vector-point-map e)))
        (catch TooManyEvaluationsException _
-         {::anomalies/message  (format "Max evaluations (%d) exceeded." max-evaluations)
+         {::anomalies/message  (format "Max evaluations (%d) exceeded."
+                                       max-evaluations)
           ::anomalies/fn       (var nonlinear-least-squares)
           ::anomalies/category ::anomalies/third-party})
        (catch TooManyIterationsException _
-         {::anomalies/message  (format "Max iterations (%d) exceeded." max-iter)
+         {::anomalies/message  (format "Max iterations (%d) exceeded."
+                                       max-iter)
           ::anomalies/fn       (var nonlinear-least-squares)
           ::anomalies/category ::anomalies/third-party})
        (catch Exception e
@@ -549,7 +573,9 @@
 
 (s/def ::constraints-with-jacobian-and-guess
   (s/with-gen
-    (s/and (s/keys :req [::constraints-fn ::constraint-jacobian-fn ::vars-guess])
+    (s/and (s/keys :req [::constraints-fn
+                         ::constraint-jacobian-fn
+                         ::vars-guess])
            (fn [{::keys [constraints-fn constraint-jacobian-fn vars-guess]}]
              (let [jac (constraint-jacobian-fn vars-guess)]
                (or (not jac)
@@ -590,12 +616,17 @@
 (s/def ::constraint-weights (s/nilable ::vector/vector-finite+))
 
 (s/fdef nonlinear-least-squares
-        :args (s/cat :constraints-with-jacobian-and-guess ::constraints-with-jacobian-and-guess
-                     :opts (s/? (s/keys :opt [::max-iter ::rel-accu ::abs-accu
-                                              ::max-evaluations ::check-by-objective?
-                                              ::use-gauss-newton? ::constraint-weights])))
-        :ret (s/or :solution ::weighted-constraint-errors-and-vector-point
-                   :anomaly ::anomalies/anomaly))
+  :args (s/cat :constraints-with-jacobian-and-guess
+               ::constraints-with-jacobian-and-guess
+               :opts (s/? (s/keys :opt [::max-iter
+                                        ::rel-accu
+                                        ::abs-accu
+                                        ::max-evaluations
+                                        ::check-by-objective?
+                                        ::use-gauss-newton?
+                                        ::constraint-weights])))
+  :ret (s/or :solution ::weighted-constraint-errors-and-vector-point
+             :anomaly ::anomalies/anomaly))
 
 ;;;NLP
 ;;OPTIMIZE WITHOUT CONSTRAINTS AND WITH GRADIENT
@@ -618,23 +649,28 @@
                    NonLinearConjugateGradientOptimizer$Formula/POLAK_RIBIERE
                    NonLinearConjugateGradientOptimizer$Formula/FLETCHER_REEVES)
          checker (checker-fn check-by-objective? rel-accu abs-accu)
-         data [(NonLinearConjugateGradientOptimizer$BracketingStep. initial-step-size)
+         data [(NonLinearConjugateGradientOptimizer$BracketingStep.
+                 initial-step-size)
                (MaxEval. max-iter)
                (ObjectiveFunction. (multivariate-function objective))
-               (ObjectiveFunctionGradient. (multivariate-vector-function gradient))
+               (ObjectiveFunctionGradient.
+                 (multivariate-vector-function gradient))
                (goal-fn goal)
                (InitialGuess. (double-array vars-guess))]]
      (try
-       (let [pv (.optimize (NonLinearConjugateGradientOptimizer. updater checker)
-                           (into-array OptimizationData data))]
+       (let [pv (.optimize
+                  (NonLinearConjugateGradientOptimizer. updater checker)
+                  (into-array OptimizationData data))]
          (->value-and-vector-point-map pv))
        (catch TooManyEvaluationsException _
          {::anomalies/message  (format "Max iterations (%d) exceeded." max-iter)
-          ::anomalies/fn       (var optimize-without-constraints-and-with-gradient)
+          ::anomalies/fn       (var
+                                 optimize-without-constraints-and-with-gradient)
           ::anomalies/category ::anomalies/third-party})
        (catch Exception e
          {::anomalies/message  (str (.getMessage e))
-          ::anomalies/fn       (var optimize-without-constraints-and-with-gradient)
+          ::anomalies/fn       (var
+                                 optimize-without-constraints-and-with-gradient)
           ::anomalies/category ::anomalies/third-party})))))
 
 (s/def ::update-using-polak-ribiere? boolean?)
@@ -675,12 +711,17 @@
                    ::vars-guess [1.9 -1.9]})))))
 
 (s/fdef optimize-without-constraints-and-with-gradient
-        :args (s/cat :objective-with-gradient-and-guess ::objective-with-gradient-and-guess
-                     :opts (s/? (s/keys :opt [::max-iter ::goal ::rel-accu
-                                              ::abs-accu ::check-by-objective?
-                                              ::update-using-polak-ribiere? ::initial-step-size])))
-        :ret (s/or :solution ::value-and-vector-point
-                   :anomaly ::anomalies/anomaly))
+  :args (s/cat :objective-with-gradient-and-guess
+               ::objective-with-gradient-and-guess
+               :opts (s/? (s/keys :opt [::max-iter
+                                        ::goal
+                                        ::rel-accu
+                                        ::abs-accu
+                                        ::check-by-objective?
+                                        ::update-using-polak-ribiere?
+                                        ::initial-step-size])))
+  :ret (s/or :solution ::value-and-vector-point
+             :anomaly ::anomalies/anomaly))
 
 ;;OPTIMIZE NO-DERIVATIVE NO-CONSTRAINTS
 (defn optimize-without-constraints-or-gradient
@@ -711,7 +752,8 @@
                                      (.build initial)))
                 :multi-directional-simplex (conj
                                              data
-                                             (doto (MultiDirectionalSimplex. dim-count)
+                                             (doto (MultiDirectionalSimplex.
+                                                     dim-count)
                                                (.build initial))))
          s (if (= without-constraints-or-gradient-nlp-solver-type :powell)
              (PowellOptimizer. rel-accu abs-accu)
@@ -732,12 +774,15 @@
   #{:powell :nelder-mead :multi-directional-simplex})
 
 (s/fdef optimize-without-constraints-or-gradient
-        :args (s/cat :objective ::objective
-                     :vars-guess ::vars-guess
-                     :opts (s/? (s/keys :opt [::max-iter ::goal ::rel-accu ::abs-accu
-                                              ::without-constraints-or-gradient-nlp-solver-type])))
-        :ret (s/or :solution ::value-and-vector-point
-                   :anomaly ::anomalies/anomaly))
+  :args (s/cat :objective ::objective
+               :vars-guess ::vars-guess
+               :opts (s/? (s/keys :opt [::max-iter
+                                        ::goal
+                                        ::rel-accu
+                                        ::abs-accu
+                                        ::without-constraints-or-gradient-nlp-solver-type])))
+  :ret (s/or :solution ::value-and-vector-point
+             :anomaly ::anomalies/anomaly))
 
 ;;OPTIMIZE NO-DERIVATIVE WITH SIMPLE BOUNDS ONLY
 (defn optimize-cma-evolution!
@@ -790,10 +835,12 @@
   `::check-by-objective?` - Whether convergence checker uses objective function
   or point value for calculating error."
   ([objective var-lower-bounds var-upper-bounds vars-guess]
-   (optimize-cma-evolution! objective var-lower-bounds var-upper-bounds vars-guess {}))
+   (optimize-cma-evolution!
+     objective var-lower-bounds var-upper-bounds vars-guess {}))
   ([objective var-lower-bounds var-upper-bounds vars-guess
     {::keys [max-iter goal rel-accu abs-accu check-by-objective? sigmas
-             population-size stop-fitness active-cma? diagonal-only check-feasible-count]
+             population-size stop-fitness active-cma? diagonal-only
+             check-feasible-count]
      :or    {goal                 :min
              rel-accu             1e-14
              abs-accu             1e-6
@@ -821,14 +868,17 @@
                (SimpleBounds. (double-array var-lower-bounds)
                               (double-array var-upper-bounds))]
          checker (checker-fn check-by-objective? rel-accu abs-accu)
-         ;for debugging on `s` below (.getStatisticsDHistory, .getStatisticsFitnessHistory,
-         ;                            .getStatisticsMeanHistory, .getStatisticsSigmaHistory)
+         ;for debugging on `s` below
+         ; (.getStatisticsDHistory, .getStatisticsFitnessHistory,
+         ;  .getStatisticsMeanHistory, .getStatisticsSigmaHistory)
          generate-stats? false
          s (CMAESOptimizer. iter stop-fitness active-cma? diagonal-only
-                            check-feasible-count (alt-random/mersenne-rng (random/rnd-long!))
+                            check-feasible-count (alt-random/mersenne-rng
+                                                   (random/rnd-long!))
                             generate-stats? checker)]
      (try
-       ;:value has to be calculated below because it's not consistent with :point values otherwise
+       ;:value has to be calculated below because it's
+       ; not consistent with :point values otherwise
        (let [pv (.optimize s (into-array OptimizationData data))
              pt (::vector-point (->value-and-vector-point-map pv))]
          {::vector-point pt
@@ -879,16 +929,23 @@
               #(s/gen (s/int-in 0 1000))))
 
 (s/fdef optimize-cma-evolution!
-        :args (s/cat :objective ::objective
-                     :var-lower-bounds ::var-lower-bounds
-                     :var-upper-bounds ::var-upper-bounds
-                     :vars-guess ::vars-guess
-                     :opts (s/? (s/keys :opt [::max-iter ::goal ::rel-accu ::abs-accu
-                                              ::check-by-objective? ::sigmas ::population-size
-                                              ::stop-fitness ::active-cma? ::diagonal-only
-                                              ::check-feasible-count])))
-        :ret (s/or :solution ::value-and-vector-point
-                   :anomaly ::anomalies/anomaly))
+  :args (s/cat :objective ::objective
+               :var-lower-bounds ::var-lower-bounds
+               :var-upper-bounds ::var-upper-bounds
+               :vars-guess ::vars-guess
+               :opts (s/? (s/keys :opt [::max-iter
+                                        ::goal
+                                        ::rel-accu
+                                        ::abs-accu
+                                        ::check-by-objective?
+                                        ::sigmas
+                                        ::population-size
+                                        ::stop-fitness
+                                        ::active-cma?
+                                        ::diagonal-only
+                                        ::check-feasible-count])))
+  :ret (s/or :solution ::value-and-vector-point
+             :anomaly ::anomalies/anomaly))
 
 (defn optimize-bobyqa
   "Powell's BOBYQA algorithm (Bound Optimization BY Quadratic Approximation).
@@ -903,7 +960,7 @@
    (optimize-bobyqa objective var-lower-bounds var-upper-bounds vars-guess {}))
   ([objective var-lower-bounds var-upper-bounds vars-guess
     {::keys [max-iter goal bobyqa-interpolation-points]
-     :or    {goal     :min}}]
+     :or    {goal :min}}]
    (let [max-iter (or max-iter 1000)
          data [(MaxEval. max-iter)
                (ObjectiveFunction. (multivariate-function objective))
@@ -911,7 +968,8 @@
                (InitialGuess. (double-array vars-guess))
                (SimpleBounds. (double-array var-lower-bounds)
                               (double-array var-upper-bounds))]
-         p (or bobyqa-interpolation-points (m/ceil' (* 1.5 (inc (count vars-guess)))))
+         p (or bobyqa-interpolation-points
+               (m/ceil' (* 1.5 (inc (count vars-guess)))))
          s (BOBYQAOptimizer. p)]
      (try
        (let [pv (.optimize s (into-array OptimizationData data))]
@@ -933,13 +991,15 @@
         (gen/return nil)])))
 
 (s/fdef optimize-bobyqa
-        :args (s/cat :objective ::objective
-                     :var-lower-bounds ::var-lower-bounds
-                     :var-upper-bounds ::var-upper-bounds
-                     :vars-guess ::vars-guess
-                     :opts (s/? (s/keys :opt [::max-iter ::goal ::bobyqa-interpolation-points])))
-        :ret (s/or :solution ::value-and-vector-point
-                   :anomaly ::anomalies/anomaly))
+  :args (s/cat :objective ::objective
+               :var-lower-bounds ::var-lower-bounds
+               :var-upper-bounds ::var-upper-bounds
+               :vars-guess ::vars-guess
+               :opts (s/? (s/keys :opt [::max-iter
+                                        ::goal
+                                        ::bobyqa-interpolation-points])))
+  :ret (s/or :solution ::value-and-vector-point
+             :anomaly ::anomalies/anomaly))
 
 ;;;INTERPOLATION
 (s/def ::strictly-ascending-vector-finite
@@ -1020,14 +1080,16 @@
              :akima (AkimaSplineInterpolator.))]
      (try (let [^UnivariateFunction f (.interpolate
                                         (if (pos? period)
-                                          (UnivariatePeriodicInterpolator. s period)
+                                          (UnivariatePeriodicInterpolator.
+                                            s period)
                                           s)
                                         (double-array x-vals)
                                         (double-array f-vals))]
             (fn [x]
               (try (.value f (double x))
                    (catch Exception e
-                     {::anomalies/message  (str "Returned Function: " (.getMessage e))
+                     {::anomalies/message  (str "Returned Function: "
+                                                (.getMessage e))
                       ::anomalies/fn       (var interpolation-1D)
                       ::anomalies/category ::anomalies/third-party}))))
           (catch Exception e {::anomalies/message  (str (.getMessage e))
@@ -1067,14 +1129,14 @@
                           ::f-vals f-v})))))))
 
 (s/fdef interpolation-1D
-        :args (s/cat :x-vals-with-f-vals ::x-vals-with-f-vals
-                     :opts (s/? (s/keys :opt [::interpolation-1D-type
-                                              ::period
-                                              ::bandwidth-for-loess])))
-        :ret (s/or :solution (s/fspec :args (s/cat :x ::m/num)
-                                      :ret (s/or :inner-solution ::m/number
-                                                 :inner-anomaly ::anomalies/anomaly))
-                   :anomaly ::anomalies/anomaly))
+  :args (s/cat :x-vals-with-f-vals ::x-vals-with-f-vals
+               :opts (s/? (s/keys :opt [::interpolation-1D-type
+                                        ::period
+                                        ::bandwidth-for-loess])))
+  :ret (s/or :solution (s/fspec :args (s/cat :x ::m/num)
+                                :ret (s/or :inner-solution ::m/number
+                                           :inner-anomaly ::anomalies/anomaly))
+             :anomaly ::anomalies/anomaly))
 
 (defn interpolation-1D-using-derivatives
   "`data` should be a collection of seqs, where each seq contains
@@ -1108,10 +1170,10 @@
     #(gen/vector (s/gen ::point-datum) 3 5)))
 
 (s/fdef interpolation-1D-using-derivatives
-        :args (s/cat :data ::point-data)
-        :ret (s/fspec :args (s/cat :x ::m/num)
-                      :ret (s/or :inner-solution ::m/number
-                                 :inner-anomaly ::anomalies/anomaly)))
+  :args (s/cat :data ::point-data)
+  :ret (s/fspec :args (s/cat :x ::m/num)
+                :ret (s/or :inner-solution ::m/number
+                           :inner-anomaly ::anomalies/anomaly)))
 
 (defn interpolation-2D
   "Generates a bicubic interpolation function. Prior to generating the
@@ -1140,7 +1202,8 @@
             (fn [x y]
               (if (.isValidPoint f x y)
                 (.value f x y)
-                {::anomalies/message  (format "Returned Function: point %.5f, %.5f is not valid."
+                {::anomalies/message  (format (str "Returned Function: point"
+                                                   " %.5f, %.5f is not valid.")
                                               (double x)
                                               (double y))
                  ::anomalies/fn       (var interpolation-2D)
@@ -1158,7 +1221,8 @@
             (fn [x y]
               (if (.isValidPoint f x y)
                 (.value f x y)
-                {::anomalies/message  (format "Returned Function: point %.5f, %.5f is not valid."
+                {::anomalies/message  (format (str "Returned Function: point"
+                                                   " %.5f, %.5f is not valid.")
                                               (double x)
                                               (double y))
                  ::anomalies/fn       (var interpolation-2D)
@@ -1191,17 +1255,17 @@
                                   ::f-matrix f-m})))))))
 
 (s/fdef interpolation-2D
-        :args (s/and (s/cat :vals-with-matrix ::vals-with-matrix
-                            :opts (s/? (s/keys :opt [::smooth?])))
-                     (fn [{:keys [vals-with-matrix opts]}]
-                       (let [{::keys [f-matrix]} vals-with-matrix
-                             {::keys [smooth?]} opts]
-                         (or smooth? (>= (tensor/ecount f-matrix) 5)))))
-        :ret (s/or :solution (s/fspec :args (s/cat :x ::m/num
-                                                   :y ::m/num)
-                                      :ret (s/or :inner-solution ::m/number
-                                                 :inner-anomaly ::anomalies/anomaly))
-                   :anomaly ::anomalies/anomaly))
+  :args (s/and (s/cat :vals-with-matrix ::vals-with-matrix
+                      :opts (s/? (s/keys :opt [::smooth?])))
+               (fn [{:keys [vals-with-matrix opts]}]
+                 (let [{::keys [f-matrix]} vals-with-matrix
+                       {::keys [smooth?]} opts]
+                   (or smooth? (>= (tensor/ecount f-matrix) 5)))))
+  :ret (s/or :solution (s/fspec :args (s/cat :x ::m/num
+                                             :y ::m/num)
+                                :ret (s/or :inner-solution ::m/number
+                                           :inner-anomaly ::anomalies/anomaly))
+             :anomaly ::anomalies/anomaly))
 
 (defn interpolation-3D
   "`::x-vals` - All the x-coordinates of the interpolation points, in strictly
@@ -1225,7 +1289,8 @@
          (fn [x y z]
            (try (.value f x y z)
                 (catch Exception e
-                  {::anomalies/message  (str "Returned Function: " (.getMessage e))
+                  {::anomalies/message  (str "Returned Function: "
+                                             (.getMessage e))
                    ::anomalies/fn       (var interpolation-3D)
                    ::anomalies/category ::anomalies/third-party}))))
        (catch Exception e
@@ -1264,13 +1329,13 @@
                                   ::f-tensor f-t})))))))
 
 (s/fdef interpolation-3D
-        :args (s/cat :vals-with-tensor ::vals-with-tensor)
-        :ret (s/or :solution (s/fspec :args (s/cat :x ::m/num
-                                                   :y ::m/num
-                                                   :z ::m/num)
-                                      :ret (s/or :inner-solution ::m/number
-                                                 :inner-anomaly ::anomalies/anomaly))
-                   :anomaly ::anomalies/anomaly))
+  :args (s/cat :vals-with-tensor ::vals-with-tensor)
+  :ret (s/or :solution (s/fspec :args (s/cat :x ::m/num
+                                             :y ::m/num
+                                             :z ::m/num)
+                                :ret (s/or :inner-solution ::m/number
+                                           :inner-anomaly ::anomalies/anomaly))
+             :anomaly ::anomalies/anomaly))
 
 (defn interpolation-ND-microsphere$
   "Interpolator that implements the algorithm described in William Dudziak's MS
@@ -1313,7 +1378,7 @@
                           ::f-vals   f-v})))))))
 
 (s/fdef interpolation-ND-microsphere$
-        :args (s/cat :i-matrix-with-f-vals ::i-matrix-with-f-vals)
-        :ret (s/fspec :args (s/cat :v ::vector/vector-num)
-                      :ret (s/or :inner-solution ::m/number
-                                 :inner-anomaly ::anomalies/anomaly)))
+  :args (s/cat :i-matrix-with-f-vals ::i-matrix-with-f-vals)
+  :ret (s/fspec :args (s/cat :v ::vector/vector-num)
+                :ret (s/or :inner-solution ::m/number
+                           :inner-anomaly ::anomalies/anomaly)))

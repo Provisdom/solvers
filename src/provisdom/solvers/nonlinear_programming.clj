@@ -339,11 +339,8 @@
   Returns a map of ::vector-point and ::value.
 
   `::bounded-without-evolutionary-solver-type` options:
-   The default, `:all`, can runs all solvers in parallel on different threads.
-   Alternatively, choose one of the following, or a collection containing one or
-   more of the following:
-     `:cobyla`
-     `:bobyqa`.
+   The default is `:cobyla`. Alternatively, can choose `:bobyqa`. Or, choose
+   `:all` to run all solvers in parallel on different threads.
 
   `::objective` should take a double-array and return a number.
   `::vars-guess` should be a vector.
@@ -371,7 +368,7 @@
              parallel?]
      :or    {goal                                     :min
              abs-accu                                 1e-8
-             bounded-without-evolutionary-solver-type :all
+             bounded-without-evolutionary-solver-type :cobyla
              met-bounds-accu                          1e-6
              cobyla-initial-change                    0.5
              parallel?                                false}}]
