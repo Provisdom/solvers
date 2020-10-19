@@ -1,5 +1,5 @@
 {:paths     ["src"]
- :deps      {orchestra                        {:mvn/version "2020.09.18-1"}
+ :deps      {orchestra/orchestra              {:mvn/version "2020.09.18-1"}
              provisdom/neanderthal-matrix     {:git/url "https://github.com/Provisdom/neanderthal-matrix.git"
                                                :sha     "fce8f1a760d61531f5ae673dc68f479cfaf08ade"}
              provisdom/math                   {:git/url "https://github.com/Provisdom/math.git"
@@ -28,7 +28,7 @@
              :test        {:extra-paths ["test"]
                            :extra-deps  {com.cognitect/test-runner {:git/url "https://github.com/cognitect-labs/test-runner.git"
                                                                     :sha     "b6b3193fcc42659d7e46ecd1884a228993441182"}
-                                         criterium                 {:mvn/version "0.4.6"}
+                                         criterium/criterium       {:mvn/version "0.4.6"}
                                          org.clojure/test.check    {:mvn/version "1.1.0"}
                                          provisdom/test            {:git/url "https://github.com/Provisdom/test.git"
                                                                     :sha     "e34b8d22f14401c5dca6e213b981a244865cc9fd"}}}
