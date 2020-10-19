@@ -1,11 +1,11 @@
 {:paths     ["src"]
  :deps      {orchestra/orchestra              {:mvn/version "2020.09.18-1"}
              provisdom/neanderthal-matrix     {:git/url "https://github.com/Provisdom/neanderthal-matrix.git"
-                                               :sha     "fce8f1a760d61531f5ae673dc68f479cfaf08ade"}
+                                               :sha     "3dcaed4513c275245ac7371a28174b925c04f51c"}
              provisdom/math                   {:git/url "https://github.com/Provisdom/math.git"
                                                :sha     "289ce7bfa71552998d025824e4e994ee2541955b"}
              provisdom/apache-math            {:git/url "https://github.com/Provisdom/apache-math.git"
-                                               :sha     "aca372fd92ee530c8c91a024dc0665d48cf0e40c"}
+                                               :sha     "523d792a07715407ce1a3d8c205ea62d2e26e9ac"}
              provisdom/utility-belt           {:git/url "https://github.com/Provisdom/utility-belt.git"
                                                :sha     "9e91b311d1024628ef882290d93eff1b886b7eeb"}
 
