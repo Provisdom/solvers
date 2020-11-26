@@ -15,12 +15,12 @@
 
 (s/def ::one-root-solver-type
   (s/or :apache-solvers ::apache-solvers/root-solver-type
-        :not-apache-solvers #{:brent-dekker :modified-newton-raphson}))
+    :not-apache-solvers #{:brent-dekker :modified-newton-raphson}))
 
 (s/def ::root-solver-type
   (s/or :one ::one-root-solver-type
-        :all #{:all}
-        :seq (s/coll-of ::one-root-solver-type :distinct true)))
+    :all #{:all}
+    :seq (s/coll-of ::one-root-solver-type :distinct true)))
 
 (s/def ::max-iter ::apache-solvers/max-iter)
 (s/def ::rel-accu ::apache-solvers/rel-accu)
@@ -32,35 +32,35 @@
 (s/def ::univariate-f-with-guess-and-interval
   (s/with-gen
     (s/and (s/keys :req [::univariate-f ::guess ::interval])
-           (fn [{::keys [guess interval]}]
-             (intervals/in-interval? interval guess)))
+      (fn [{::keys [guess interval]}]
+        (intervals/in-interval? interval guess)))
     #(gen/one-of (map gen/return
-                      (list {::univariate-f identity
-                             ::guess        3.0
-                             ::interval     [-5.0 5.0]}
-                            {::univariate-f (fn [v]
-                                              (- (m/cube v) (* 3 v)))
-                             ::guess        3.0
-                             ::interval     [-50.0 50.0]}
-                            {::univariate-f (fn [v]
-                                              (- (m/exp v) (* 5 v)))
-                             ::guess        3.0
-                             ::interval     [-50.0 50.0]})))))
+                   (list {::univariate-f identity
+                          ::guess        3.0
+                          ::interval     [-5.0 5.0]}
+                     {::univariate-f (fn [v]
+                                       (- (m/cube v) (* 3 v)))
+                      ::guess        3.0
+                      ::interval     [-50.0 50.0]}
+                     {::univariate-f (fn [v]
+                                       (- (m/exp v) (* 5 v)))
+                      ::guess        3.0
+                      ::interval     [-50.0 50.0]})))))
 
 (s/def ::univariate-f-with-interval
   (s/with-gen
     (s/keys :req [::univariate-f ::interval])
     #(gen/one-of (map gen/return
-                      (list {::univariate-f identity
-                             ::interval     [-5.0 5.0]}
-                            {::univariate-f (fn [v]
-                                              (+ (m/cube v) (* 3 v)))
-                             ::interval     [-5.0 5.0]}
-                            {::univariate-f (fn [v]
-                                              (+ (m/exp v) (m/cube v) (* 3 v)))
-                             ::interval     [-5.0 5.0]}
-                            {::univariate-f (comp inc m/sq)
-                             ::interval     [-5.0 5.0]})))))
+                   (list {::univariate-f identity
+                          ::interval     [-5.0 5.0]}
+                     {::univariate-f (fn [v]
+                                       (+ (m/cube v) (* 3 v)))
+                      ::interval     [-5.0 5.0]}
+                     {::univariate-f (fn [v]
+                                       (+ (m/exp v) (m/cube v) (* 3 v)))
+                      ::interval     [-5.0 5.0]}
+                     {::univariate-f (comp inc m/sq)
+                      ::interval     [-5.0 5.0]})))))
 
 (s/def ::mnr-derivative-fn
   (s/with-gen
@@ -77,17 +77,17 @@
                 ::mnr-derivative-fn (constantly 1.0)
                 ::guess             4.0}
 
-               {::univariate-f      (fn [v] (+ (m/cube v) (* 3 v)))
-                ::mnr-derivative-fn (fn [v] (* 3 (inc (m/sq v))))
-                ::guess             -1.0}
+           {::univariate-f      (fn [v] (+ (m/cube v) (* 3 v)))
+            ::mnr-derivative-fn (fn [v] (* 3 (inc (m/sq v))))
+            ::guess             -1.0}
 
-               {::univariate-f      (fn [v] (+ (m/exp v) (m/cube v) (* 3 v)))
-                ::mnr-derivative-fn (fn [v] (+ (m/exp v) (* 3 (inc (m/sq v)))))
-                ::guess             3.0}
+           {::univariate-f      (fn [v] (+ (m/exp v) (m/cube v) (* 3 v)))
+            ::mnr-derivative-fn (fn [v] (+ (m/exp v) (* 3 (inc (m/sq v)))))
+            ::guess             3.0}
 
-               {::univariate-f      (comp inc m/sq)
-                ::mnr-derivative-fn (partial * 2)
-                ::guess             5.0})))))
+           {::univariate-f      (comp inc m/sq)
+            ::mnr-derivative-fn (partial * 2)
+            ::guess             5.0})))))
 
 (defn root-solver-quadratic
   "Returns a tuple with the two solutions [- +] to 'x' from the quadratic
@@ -109,10 +109,10 @@
 
 (s/fdef root-solver-quadratic
   :args (s/cat :a ::m/num
-               :b ::m/num
-               :c ::m/num)
+          :b ::m/num
+          :c ::m/num)
   :ret (s/or :solution (s/tuple ::m/num ::m/num)
-             :anomaly ::anomalies/anomaly))
+         :anomaly ::anomalies/anomaly))
 
 (defn- modified-newton-raphson
   "Modification dynamically alters a change factor based on previous changes.
@@ -141,7 +141,7 @@
                  ::anomalies/category ::anomalies/no-solve}
                 (let [den (- (* 2 x2) x1 x3)
                       c (if (or (m/roughly? x2 x3 m/dbl-close)
-                                (m/roughly? den 0 m/dbl-close))
+                              (m/roughly? den 0 m/dbl-close))
                           1
                           (m/div (- x2 x3) den))
                       x (- x1 (/ (* c fx1) d))]
@@ -149,10 +149,10 @@
 
 (s/fdef modified-newton-raphson
   :args (s/cat :univariate-f-with-mnr-derivative-fn-and-guess ::univariate-f-with-mnr-derivative-fn-and-guess
-               :abs-accu ::abs-accu
-               :max-iter ::max-iter)
+          :abs-accu ::abs-accu
+          :max-iter ::max-iter)
   :ret (s/or :finite ::m/finite
-             :anomaly ::anomalies/anomaly))
+         :anomaly ::anomalies/anomaly))
 
 (defn- brent-dekker
   "References: http://en.wikipedia.org/wiki/Brent's_method"
@@ -184,28 +184,28 @@
                m true
                i 0]
           (if (or (m/roughly? fb 0 m/dbl-close)
-                  (<= (m/abs (- a b)) e))
+                (<= (m/abs (- a b)) e))
             b
             (let [s (if (and (not= fa fc) (not= fb fc))
                       (+ (m/div (* a fb fc) (* (- fa fb) (- fa fc)))
-                         (m/div (* b fa fc) (* (- fb fa) (- fb fc)))
-                         ;;Inverse quadratic interpolation
-                         (/ (* c fa fb)
-                            (- fc fa)
-                            (- fc fb)))
+                        (m/div (* b fa fc) (* (- fb fa) (- fb fc)))
+                        ;;Inverse quadratic interpolation
+                        (/ (* c fa fb)
+                          (- fc fa)
+                          (- fc fb)))
                       (- b (m/div (* fb (- b a)) (- fb fa)))) ;Secant Rule
                   t (* (+ (* 3 a) b) 0.25)
                   m (or (not (or (and (> s t) (< s b))
-                                 (and (< s t) (> s b))))
-                        (and m
-                             (>= (m/abs (- s b)) (* 0.5 (m/abs (- b c)))))
-                        (and (not m)
-                             (>= (m/abs (- s b))
-                                 (* 0.5 (m/abs (- c d)))))
-                        (and m
-                             (< (m/abs (- b c)) e))
-                        (and (not m)
-                             (< (m/abs (- c d)) e)))
+                               (and (< s t) (> s b))))
+                      (and m
+                        (>= (m/abs (- s b)) (* 0.5 (m/abs (- b c)))))
+                      (and (not m)
+                        (>= (m/abs (- s b))
+                          (* 0.5 (m/abs (- c d)))))
+                      (and m
+                        (< (m/abs (- b c)) e))
+                      (and (not m)
+                        (< (m/abs (- c d)) e)))
                   s (if m
                       (* 0.5 (+ a b))
                       s)
@@ -241,10 +241,10 @@
 
 (s/fdef brent-dekker
   :args (s/cat :univariate-f-with-interval ::univariate-f-with-interval
-               :abs-accu ::abs-accu
-               :max-iter ::max-iter)
+          :abs-accu ::abs-accu
+          :max-iter ::max-iter)
   :ret (s/or :finite ::m/finite
-             :anomaly ::anomalies/anomaly))
+         :anomaly ::anomalies/anomaly))
 
 (defn- root-selector-fn
   [univariate-f interval]
@@ -255,7 +255,7 @@
                                   (m/abs (univariate-f new-point))
                                   m/max-dbl)]
                   (if (and (< new-value smallest-value)
-                           (intervals/in-interval? interval new-point))
+                        (intervals/in-interval? interval new-point))
                     [new-value new-point]
                     [smallest-value smallest-point])))
               [m/max-dbl nil]
@@ -292,14 +292,14 @@
          solvers (if-not (= :all root-solver-type)
                    root-solver-type
                    (list :bisection :bracketing-nth-order-brent :brent :brent-dekker
-                         :illinois :modified-newton-raphson :muller :muller2 :newton-raphson
-                         :pegasus :regula-falsi :ridders :secant))
+                     :illinois :modified-newton-raphson :muller :muller2 :newton-raphson
+                     :pegasus :regula-falsi :ridders :secant))
          solver-fn (fn [solver-type]
                      (condp = solver-type
                        :brent-dekker #(brent-dekker {::univariate-f univariate-f
                                                      ::interval     interval}
-                                                    abs-accu
-                                                    max-iter)
+                                        abs-accu
+                                        max-iter)
                        :modified-newton-raphson #(modified-newton-raphson
                                                    {::univariate-f      univariate-f
                                                     ::mnr-derivative-fn mnr-derivative-fn
@@ -316,21 +316,20 @@
                            ::apache-solvers/abs-accu         abs-accu})))]
      (cond (keyword? solvers) ((solver-fn solvers))
            (m/one? (count solvers)) ((solver-fn (first solvers)))
-           :else (let [sol (if parallel?
-                             (async/thread-select
-                               (root-selector-fn univariate-f interval)
-                               (map solver-fn solvers)
-                               parallel?))]
+           :else (let [sol (async/thread-select
+                             (root-selector-fn univariate-f interval)
+                             (map solver-fn solvers)
+                             parallel?)]
                    (or sol {::anomalies/message  "No solution"
                             ::anomalies/fn       (var root-solver)
                             ::anomalies/category ::anomalies/no-solve}))))))
 
 (s/fdef root-solver
   :args (s/cat :univariate-f-with-guess-and-interval ::univariate-f-with-guess-and-interval
-               :opts (s/? (s/keys :opt [::max-iter
-                                        ::rel-accu
-                                        ::abs-accu
-                                        ::root-solver-type
-                                        ::mnr-derivative-fn])))
+          :opts (s/? (s/keys :opt [::max-iter
+                                   ::rel-accu
+                                   ::abs-accu
+                                   ::root-solver-type
+                                   ::mnr-derivative-fn])))
   :ret (s/or :finite ::m/finite
-             :anomaly ::anomalies/anomaly))
+         :anomaly ::anomalies/anomaly))
