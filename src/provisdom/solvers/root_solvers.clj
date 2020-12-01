@@ -29,7 +29,7 @@
 (s/def ::univariate-f ::apache-solvers/univariate-f)
 (s/def ::interval ::apache-solvers/finite-interval)
 
-(s/def ::univariate-f-with-guess-and-interval
+(s/def ::uni-f-with-guess-and-interval
   (s/with-gen
     (s/and (s/keys :req [::univariate-f ::guess ::interval])
       (fn [{::keys [guess interval]}]
@@ -148,7 +148,8 @@
                   (recur i x x1 x2))))))))))
 
 (s/fdef modified-newton-raphson
-  :args (s/cat :univariate-f-with-mnr-derivative-fn-and-guess ::univariate-f-with-mnr-derivative-fn-and-guess
+  :args (s/cat :univariate-f-with-mnr-derivative-fn-and-guess
+          ::univariate-f-with-mnr-derivative-fn-and-guess
           :abs-accu ::abs-accu
           :max-iter ::max-iter)
   :ret (s/or :finite ::m/finite
@@ -162,9 +163,10 @@
         fb (double (univariate-f b))
         d m/max-dbl
         e abs-accu
-        max-iter (or max-iter 1000)]
+        max-iter (or max-iter 1000)
+        msg "root is not bracketed at [%f %f] with output of [%f %f]"]
     (if (m/non-? (* fa fb))
-      {::anomalies/message  (format "root is not bracketed at [%f %f] with output of [%f %f]" a b fa fb)
+      {::anomalies/message  (format msg a b fa fb)
        ::anomalies/fn       (var brent-dekker)
        ::anomalies/category ::anomalies/no-solve}
       (let [z (< (m/abs fa) (m/abs fb))
@@ -232,9 +234,10 @@
                        (if z2 fs fa)
                        (if z2 fs2 fs))
                   i (inc i)
-                  d (double d)]
+                  d (double d)
+                  msg2 "too many iterations %d at %f with output of %f"]
               (if (> i max-iter)
-                {::anomalies/message  (format "too many iterations %d at %f with output of %f" i b fb)
+                {::anomalies/message  (format msg2 i b fb)
                  ::anomalies/fn       (var brent-dekker)
                  ::anomalies/category ::anomalies/no-solve}
                 (recur a fa b fb c fc d m i)))))))))
@@ -291,9 +294,10 @@
    (let [max-iter (or max-iter 1000)
          solvers (if-not (= :all root-solver-type)
                    root-solver-type
-                   (list :bisection :bracketing-nth-order-brent :brent :brent-dekker
-                     :illinois :modified-newton-raphson :muller :muller2 :newton-raphson
-                     :pegasus :regula-falsi :ridders :secant))
+                   (list :bisection :bracketing-nth-order-brent :brent
+                     :brent-dekker :illinois :modified-newton-raphson :muller
+                     :muller2 :newton-raphson :pegasus :regula-falsi :ridders
+                     :secant))
          solver-fn (fn [solver-type]
                      (condp = solver-type
                        :brent-dekker #(brent-dekker {::univariate-f univariate-f
@@ -325,7 +329,7 @@
                             ::anomalies/category ::anomalies/no-solve}))))))
 
 (s/fdef root-solver
-  :args (s/cat :univariate-f-with-guess-and-interval ::univariate-f-with-guess-and-interval
+  :args (s/cat :uni-f-with-guess-and-interval ::uni-f-with-guess-and-interval
           :opts (s/? (s/keys :opt [::max-iter
                                    ::rel-accu
                                    ::abs-accu
