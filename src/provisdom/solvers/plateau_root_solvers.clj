@@ -19,6 +19,7 @@
 (s/def ::upper-guess ::value)
 (s/def ::guesses ::values)
 (s/def ::stopped-early? boolean?)
+(s/def ::lowered-upper-plateau? boolean?)
 (s/def ::reached-max-passes? boolean?)
 (s/def ::max-iter (s/spec m/int+? :gen #(s/gen (s/int-in 1 100))))
 (s/def ::max-passes (s/spec m/int+? :gen #(s/gen (s/int-in 1 3))))
@@ -37,9 +38,19 @@
   (s/fspec :args (s/cat :value ::value)
     :ret ::plateau-output))
 
+(s/def ::plateau-and-value
+  (s/keys :req [::plateau ::value]))
+
+(s/def ::upper ::plateau-and-value)
+(s/def ::lower ::plateau-and-value)
+
+(defn- plateau-solution-contains-lower-or-upper?
+  [{::keys [lower upper]}]
+  (or lower upper))
+
 (s/def ::plateau-solution
-  (s/keys :req [::upper-plateau ::upper-value]
-    :opt [::lower-plateau ::lower-value ::stopped-early?]))
+  (s/and (s/keys :opt [::lower ::stopped-early? ::upper])
+    plateau-solution-contains-lower-or-upper?))
 
 (s/def ::plateau-solutions
   (s/coll-of ::plateau-solution
@@ -63,28 +74,35 @@
     :opt [::reached-max-passes?]))
 
 (defn- plateau-update
-  [plateau-f args x-v]
-  (if (anomalies/anomaly? args)
-    args
-    (let [[l-v l u-v u] args
-          x-v (when x-v (double x-v))]
+  [plateau-f plateau-solution-or-anom x-v]
+  (if (anomalies/anomaly? plateau-solution-or-anom)
+    plateau-solution-or-anom
+    (let [ps plateau-solution-or-anom
+          {::keys [lower upper]} ps
+          x-v (when x-v (double x-v))
+          {l-v ::value
+           l   ::plateau} lower
+          {u-v ::value
+           u   ::plateau} upper]
       (if (and x-v
-            (or (> x-v l-v) (and (not l) (== x-v l-v)))
-            (or (< x-v u-v) (and (not u) (== x-v u-v))))
+            (or (not lower) (> x-v l-v))
+            (or (not upper) (< x-v u-v)))
         (let [[x bool] (plateau-f x-v)
-              #_#_blah (println bool x x-v args)]
+              #_#_blah (println "A: " bool x x-v ps)]
           (if bool
-            (if (and l (<= x l))
+            (if (and lower (<= x l))
               {::anomalies/message  "bad function"
                ::anomalies/category ::anomalies/error
                ::anomalies/fn       (var plateau-update)}
-              [l-v l x-v x])
-            (if (and u (>= x u))
+              (assoc ps ::upper {::plateau x
+                                 ::value   x-v}))
+            (if (and upper (>= x u))
               {::anomalies/message  "bad function"
                ::anomalies/category ::anomalies/error
                ::anomalies/fn       (var plateau-update)}
-              [x-v x u-v u])))
-        args))))
+              (assoc ps ::lower {::plateau x
+                                 ::value   x-v}))))
+        ps))))
 
 (defn plateau-root-solver
   "Plateau function takes a finite and returns tuple of [long, boolean], where
@@ -101,35 +119,37 @@
              max-iter 1000}}]
    (let [f (partial plateau-update plateau-f)
          [l-v u-v] interval
-         current [l-v nil u-v nil]
-         current (f current guess)
-         current (f current upper-guess)
-         current (f current lower-guess)
+         current {}
+         current (f current (when guess
+                              (intervals/bound-by-interval interval guess)))
+         current (f current (when upper-guess
+                              (intervals/bound-by-interval interval upper-guess)))
+         current (f current (when lower-guess
+                              (intervals/bound-by-interval interval lower-guess)))
          current (f current u-v)
          current (f current l-v)]
      (if (anomalies/anomaly? current)
        current
-       (let [[l-v l u-v u] current]
-         (cond (not l) {::upper-plateau u
-                        ::upper-value   u-v}
-               (not u) {::upper-plateau l
-                        ::upper-value   l-v}
-               :else (loop [[l-v l u-v u] current
-                            i 0]
-                       (if (or (m/one? (- (double u) l))
-                             (>= i max-iter)
-                             (<= (- u-v l-v) abs-accu))
-                         (cond-> {::lower-plateau l
-                                  ::lower-value   l-v
-                                  ::upper-plateau u
-                                  ::upper-value   u-v}
-
-                           (not (m/one? (- (double u) l)))
-                           (assoc ::stopped-early? true))
-                         (let [a (f [l-v l u-v u] (* 0.5 (+ l-v u-v)))]
-                           (if (anomalies/anomaly? a)
-                             a
-                             (recur a (inc i))))))))))))
+       (let [{::keys [lower upper]} current]
+         (if (or (not lower) (not upper))
+           current
+           (loop [current current
+                  i 0]
+             (let [{::keys [lower upper]} current
+                   {l-v ::value
+                    l   ::plateau} lower
+                   {u-v ::value
+                    u   ::plateau} upper
+                   done? (m/one? (- (double u) l))]
+               (if (or done?
+                     (>= i max-iter)
+                     (<= (- u-v l-v) abs-accu))
+                 (cond-> current
+                   (not done?) (assoc ::stopped-early? true))
+                 (let [new (f current (* 0.5 (+ l-v u-v)))]
+                   (if (anomalies/anomaly? new)
+                     new
+                     (recur new (inc i)))))))))))))
 
 (s/fdef plateau-root-solver
   :args (s/cat :args (s/keys :req [::interval ::plateau-f])
@@ -142,78 +162,74 @@
          :anomaly ::anomalies/anomaly))
 
 (defn tighten-plateau-solution
-  "Tightens the `::plateau-solution` within `::abs-accu`."
+  "Tightens the `::plateau-solution` within `::abs-accu`. If a new solution is
+  found in which the upper plateau can be decreased, the optional
+  `::lowered-upper-plateau?` will be true."
   ([args] (tighten-plateau-solution args {}))
-  ([{::keys [lower-bound plateau-f plateau-solution]}
+  ([{::keys [plateau-f plateau-solution]}
     {::keys [abs-accu max-iter]
      :or    {abs-accu 1e-6
              max-iter 1000}}]
    (let [f (partial plateau-update plateau-f)
-         ps plateau-solution
-         {::keys [lower-plateau lower-value upper-plateau upper-value]} ps
-         [l-v l] (if (or (not lower-value) (< lower-bound lower-value))
-                   [lower-bound nil]
-                   [lower-value lower-plateau])
-         current [l-v l upper-value upper-plateau]
-         current (f current l-v)]
-     (if-not l
-       {::upper-plateau upper-plateau
-        ::upper-value   upper-value}
-       (loop [[l-v l u-v u] current
+         {::keys [lower upper]} plateau-solution
+         orig-u (::plateau upper)]
+     (if (or (not lower) (not upper))
+       plateau-solution
+       (loop [current plateau-solution
               i 0]
-         (if (or (>= i max-iter) (<= (- u-v l-v) abs-accu))
-           (cond-> {::lower-plateau l
-                    ::lower-value   l-v
-                    ::upper-plateau u
-                    ::upper-value   u-v}
-             (= i max-iter) (assoc ::stopped-early? true))
-           (let [a (f [l-v l u-v u] (* 0.5 (+ l-v u-v)))]
-             (if (anomalies/anomaly? a)
-               a
-               (recur a (inc i))))))))))
+         (let [{::keys [lower upper]} current
+               {l-v ::value} lower
+               {u-v ::value
+                u   ::plateau} upper
+               done? (<= (- u-v l-v) abs-accu)]
+           (if (or done? (>= i max-iter))
+             (cond-> current
+               (not done?) (assoc ::stopped-early? true)
+               (not= orig-u u) (assoc ::lowered-upper-plateau? true))
+             (let [new (f current (* 0.5 (+ l-v u-v)))]
+               (if (anomalies/anomaly? new)
+                 new
+                 (recur new (inc i)))))))))))
 
 (s/fdef tighten-plateau-solution
-  :args (s/cat :args (s/keys :req [::lower-bound ::plateau-f ::plateau-solution])
+  :args (s/cat :args (s/keys :req [::plateau-f ::plateau-solution])
           :opts (s/? (s/keys :opt [::abs-accu ::max-iter])))
   :ret (s/or :plateau-solution ::plateau-solution
          :anomaly ::anomalies/anomaly))
 
 (defn single-pass
   [multi-plateau-f
-   guesses
-   uppers
+   lower-values
+   last-values
+   upper-bounds
    abs-accu
    max-iter
-   start-plateau-solutions]
-  (reduce (fn [plateau-solutions dim]
-            (let [v (mapv ::upper-value plateau-solutions)
-                  p-f #(nth (multi-plateau-f (assoc v dim %)) dim)
-                  last-value (nth v dim)
-                  guess (get guesses dim last-value)
+   guesses]
+  (reduce (fn [[low-values values] dim]
+            (let [p-f #(nth (multi-plateau-f (assoc values dim %)) dim)
+                  last-value (nth values dim)
+                  guess (nth guesses dim)
                   sol (plateau-root-solver
-                        {::interval  [last-value (nth uppers dim)]
+                        {::interval  [last-value (nth upper-bounds dim)]
                          ::plateau-f p-f}
                         {::abs-accu abs-accu
                          ::guess    guess
                          ::max-iter max-iter})]
               (if (anomalies/anomaly? sol)
                 (reduced sol)
-                (let [lv (or (::lower-value sol)
-                           (::lower-value (nth plateau-solutions dim)))
-                      lp (or (::lower-plateau sol)
-                           (::lower-plateau (nth plateau-solutions dim)))
-                      sol (cond-> sol
-                            lv (assoc ::lower-value lv)
-                            lp (assoc ::lower-plateau lp))]
-                  (assoc plateau-solutions dim sol)))))
-    start-plateau-solutions
-    (range (count start-plateau-solutions))))
+                (let [l-v (or (::value (::lower sol)) (nth lower-values dim))
+                      v (or (::value (::upper sol)) (nth upper-bounds dim))]
+                  [(assoc low-values dim l-v) (assoc values dim v)]))))
+    [lower-values last-values]
+    (range (count last-values))))
 
 (defn multi-dimensional-plateau-root-solver
   "Multi-dimensional plateau function takes a vector-finite and returns vector
   of tuples of [long, boolean], where the long represents the plateau for that
   dimension. The plateau function must be monotonically increasing in the
-  `::intervals`, even across dimensions. Each tuple must return true when the
+  `::intervals`, even across dimensions. For an input vector, a change to a
+  dimension should only change the output of other dimensions if the output in
+  the original dimension changes plateaus. Each tuple must return true when the
   plateau is at or above the root for that dimension, and false otherwise.
   Solver stops when, for every dimension, it finds the minimum plateau that
   returns true, or when the difference between inputs is less than or equal to
@@ -225,36 +241,60 @@
      :or    {abs-accu   1e-6
              max-iter   1000
              max-passes 10}}]
-   (let [lowers (mapv (comp double first) intervals)
-         uppers (mapv (comp double second) intervals)
-         plateau-solutions (single-pass
-                             multi-plateau-f
-                             guesses
-                             uppers
-                             abs-accu
-                             max-iter
-                             (mapv (fn [l] {::upper-value l}) lowers))]
-     (loop [plateau-solutions plateau-solutions
-            last-upper-values nil
+   (let [lower-bounds (mapv (comp double first) intervals)
+         upper-bounds (mapv (comp double second) intervals)
+         guesses (if (and guesses
+                       (= (count guesses) (count lower-bounds)))
+                   guesses
+                   lower-bounds)
+         sol (single-pass
+               multi-plateau-f
+               lower-bounds
+               lower-bounds
+               upper-bounds
+               abs-accu
+               max-iter
+               guesses)
+         var-f (var multi-dimensional-plateau-root-solver)]
+     (loop [sol sol
+            previous-last-values nil
             i 1]
-       (let [upper-values (mapv ::upper-value plateau-solutions)]
-         (if (or (= upper-values last-upper-values)
-               (>= i max-passes))
-           (cond-> {::plateau-solutions plateau-solutions}
-
-             (not= upper-values last-upper-values)
-             (assoc ::reached-max-passes? true))
-
-           (let [new-plateau-solutions (single-pass
-                                         multi-plateau-f
-                                         upper-values
-                                         uppers
-                                         abs-accu
-                                         max-iter
-                                         plateau-solutions)]
-             (if (anomalies/anomaly? new-plateau-solutions)
-               new-plateau-solutions
-               (recur new-plateau-solutions upper-values (inc i))))))))))
+       (let [[lower-values last-values] sol
+             done? (= last-values previous-last-values)]
+         (if (or done? (>= i max-passes))
+           (let [pss (mapv
+                       (fn [dim]
+                         (let [p-f #(nth (multi-plateau-f
+                                           (assoc last-values dim %))
+                                      dim)
+                               l-v (nth lower-values dim)
+                               u-v (nth last-values dim)
+                               [l l-bool] (when l-v (p-f l-v))
+                               [u u-bool] (when u-v (p-f u-v))]
+                           (if (or l-bool (not u-bool))
+                             {::anomalies/message  "bad function"
+                              ::anomalies/category ::anomalies/error
+                              ::anomalies/fn       var-f}
+                             (cond-> {}
+                               l (assoc ::lower {::plateau l
+                                                 ::value   l-v})
+                               u (assoc ::upper {::plateau u
+                                                 ::value   u-v})))))
+                       (range (count last-values)))]
+             (or (first (filter anomalies/anomaly? pss))
+               (cond-> {::plateau-solutions pss}
+                 (not done?) (assoc ::reached-max-passes? true))))
+           (let [sol (single-pass
+                       multi-plateau-f
+                       lower-values
+                       last-values
+                       upper-bounds
+                       abs-accu
+                       max-iter
+                       last-values)]
+             (if (anomalies/anomaly? sol)
+               sol
+               (recur sol last-values (inc i))))))))))
 
 (s/fdef multi-dimensional-plateau-root-solver
   :args (s/cat :args (s/keys :req [::intervals ::multi-plateau-f])
@@ -265,68 +305,43 @@
   :ret (s/or :multi-plateau-solution ::multi-plateau-solution
          :anomaly ::anomalies/anomaly))
 
-(defn tighten-single-pass
-  [multi-plateau-f
-   lower-bounds
-   abs-accu
-   max-iter
-   start-plateau-solutions]
-  (reduce (fn [plateau-solutions dim]
-            (let [v (mapv ::upper-value plateau-solutions)
-                  p-f #(nth (multi-plateau-f (assoc v dim %)) dim)
-                  plateau-solution (nth plateau-solutions dim)
-                  sol (tighten-plateau-solution
-                        {::lower-bound      (get lower-bounds dim m/min-dbl)
-                         ::plateau-f        p-f
-                         ::plateau-solution plateau-solution}
-                        {::abs-accu abs-accu
-                         ::max-iter max-iter})]
-              (if (anomalies/anomaly? sol)
-                (reduced sol)
-                (let [lv (or (::lower-value sol)
-                           (::lower-value (nth plateau-solutions dim)))
-                      lp (or (::lower-plateau sol)
-                           (::lower-plateau (nth plateau-solutions dim)))
-                      sol (cond-> sol
-                            lv (assoc ::lower-value lv)
-                            lp (assoc ::lower-plateau lp))]
-                  (assoc plateau-solutions dim sol)))))
-    start-plateau-solutions
-    (range (count start-plateau-solutions))))
-
 (defn tighten-multi-plateau-solution
-  "Tightens the `::multi-plateau-solution` within `::abs-accu`."
+  "Tightens the `::multi-plateau-solution` within `::abs-accu`. If tightening
+  lowers the upper plateau of any dimension, an anomaly will be returned because
+  changing the upper plateau could drastically change the solution in the other
+  dimensions. To avoid the possibility of this, ensure the `::abs-accu`
+  is not smaller than that used for the original solution."
   ([args] (tighten-multi-plateau-solution args {}))
-  ([{::keys [lower-bounds multi-plateau-f multi-plateau-solution]}
-    {::keys [abs-accu max-iter max-passes]
-     :or    {abs-accu   1e-6
-             max-iter   1000
-             max-passes 10}}]
-   (loop [plateau-solutions (::plateau-solutions multi-plateau-solution)
-          last-upper-values nil
-          i 0]
-     (let [upper-values (mapv ::upper-value plateau-solutions)]
-       (if (or (= upper-values last-upper-values)
-             (>= i max-passes))
-         (cond-> {::plateau-solutions plateau-solutions}
-
-           (not= upper-values last-upper-values)
-           (assoc ::reached-max-passes? true))
-
-         (let [new-plateau-solutions (tighten-single-pass
-                                       multi-plateau-f
-                                       lower-bounds
-                                       abs-accu
-                                       max-iter
-                                       plateau-solutions)]
-           (if (anomalies/anomaly? new-plateau-solutions)
-             new-plateau-solutions
-             (recur new-plateau-solutions upper-values (inc i)))))))))
+  ([{::keys [multi-plateau-f multi-plateau-solution]}
+    {::keys [abs-accu max-iter]
+     :or    {abs-accu 1e-6
+             max-iter 1000}}]
+   (let [pss (::plateau-solutions multi-plateau-solution)
+         values (mapv (fn [ps] (or (::value (::upper ps))
+                                 (::value (::lower ps))))
+                  pss)
+         message (str "Tightening lowered the upper plateau. There is a better"
+                   " solution than the original multi-plateau-solution.")
+         npss (mapv
+                (fn [dim]
+                  (let [p-f #(nth (multi-plateau-f (assoc values dim %)) dim)
+                        plateau-solution (nth pss dim)
+                        new-ps (tighten-plateau-solution
+                                 {::plateau-f        p-f
+                                  ::plateau-solution plateau-solution}
+                                 {::abs-accu abs-accu
+                                  ::max-iter max-iter})]
+                    (if (::lowered-upper-plateau? new-ps)
+                      {::anomalies/category ::anomalies/error
+                       ::anomalies/message  message
+                       ::anomalies/fn       (var tighten-multi-plateau-solution)}
+                      new-ps)))
+                (range (count pss)))]
+     (or (first (filter anomalies/anomaly? npss))
+       (assoc multi-plateau-solution ::plateau-solutions npss)))))
 
 (s/fdef tighten-multi-plateau-solution
-  :args (s/cat :args (s/keys :req [::lower-bounds
-                                   ::multi-plateau-f
-                                   ::multi-plateau-solution])
+  :args (s/cat :args (s/keys :req [::multi-plateau-f ::multi-plateau-solution])
           :opts (s/? (s/keys :opt [::abs-accu ::max-iter])))
   :ret (s/or :multi-plateau-solution ::multi-plateau-solution
          :anomaly ::anomalies/anomaly))
