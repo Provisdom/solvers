@@ -271,7 +271,7 @@
                                u-v (nth last-values dim)
                                [l l-bool] (when l-v (p-f l-v))
                                [u u-bool] (when u-v (p-f u-v))]
-                           (if (or l-bool (not u-bool))
+                           (if (or l-bool (false? u-bool))
                              {::anomalies/message  "bad function"
                               ::anomalies/category ::anomalies/error
                               ::anomalies/fn       var-f}
