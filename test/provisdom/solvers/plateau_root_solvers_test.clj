@@ -6,7 +6,7 @@
             [provisdom.math.intervals :as intervals]
             [provisdom.solvers.plateau-root-solvers :as plateau]))
 
-;16 seconds
+;18 seconds
 
 (set! *warn-on-reflection* true)
 

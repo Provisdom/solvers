@@ -270,16 +270,16 @@
                                l-v (nth lower-values dim)
                                u-v (nth last-values dim)
                                [l l-bool] (when l-v (p-f l-v))
-                               [u u-bool] (when u-v (p-f u-v))]
-                           (if (or l-bool (false? u-bool))
-                             {::anomalies/message  "bad function"
-                              ::anomalies/category ::anomalies/error
-                              ::anomalies/fn       var-f}
-                             (cond-> {}
-                               l (assoc ::lower {::plateau l
-                                                 ::value   l-v})
-                               u (assoc ::upper {::plateau u
-                                                 ::value   u-v})))))
+                               [u u-bool] (when (and u-v (not= u-v l-v))
+                                            (p-f u-v))
+                               [l l-v u u-v] (if l-bool
+                                               [nil nil l l-v]
+                                               [l l-v u u-v])]
+                           (cond-> {}
+                             l (assoc ::lower {::plateau l
+                                               ::value   l-v})
+                             u (assoc ::upper {::plateau u
+                                               ::value   u-v}))))
                        (range (count last-values)))]
              (or (first (filter anomalies/anomaly? pss))
                (cond-> {::plateau-solutions pss}
