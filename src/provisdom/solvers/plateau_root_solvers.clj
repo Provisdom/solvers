@@ -18,6 +18,8 @@
 (s/def ::lower-guess ::value)
 (s/def ::upper-guess ::value)
 (s/def ::guesses ::values)
+(s/def ::lower-guesses ::guesses)
+(s/def ::upper-guesses ::guesses)
 (s/def ::stopped-early? boolean?)
 (s/def ::lowered-upper-plateau? boolean?)
 (s/def ::reached-max-passes? boolean?)
@@ -116,12 +118,15 @@
    (let [f (partial plateau-update plateau-f)
          [l-v u-v] interval
          current {}
-         current (f current (when guess
-                              (intervals/bound-by-interval interval guess)))
-         current (f current (when upper-guess
-                              (intervals/bound-by-interval interval upper-guess)))
-         current (f current (when lower-guess
-                              (intervals/bound-by-interval interval lower-guess)))
+         current (f current
+                   (when guess
+                     (intervals/bound-by-interval interval guess)))
+         current (f current
+                   (when upper-guess
+                     (intervals/bound-by-interval interval upper-guess)))
+         current (f current
+                   (when lower-guess
+                     (intervals/bound-by-interval interval lower-guess)))
          current (f current u-v)
          current (f current l-v)]
      (if (anomalies/anomaly? current)
@@ -200,17 +205,23 @@
    upper-bounds
    abs-accu
    max-iter
-   guesses]
+   guesses
+   lower-guesses
+   upper-guesses]
   (reduce (fn [[low-values values] dim]
             (let [p-f #(nth (multi-plateau-f (assoc values dim %)) dim)
                   last-value (nth values dim)
                   guess (nth guesses dim)
+                  lower-guess (when lower-guesses (get lower-guesses dim nil))
+                  upper-guess (when upper-guesses (get upper-guesses dim nil))
                   sol (plateau-root-solver
                         {::interval  [last-value (nth upper-bounds dim)]
                          ::plateau-f p-f}
-                        {::abs-accu abs-accu
-                         ::guess    guess
-                         ::max-iter max-iter})]
+                        (cond-> {::abs-accu abs-accu
+                                 ::guess    guess
+                                 ::max-iter max-iter}
+                          lower-guess (assoc ::lower-guess lower-guess)
+                          upper-guess (assoc ::upper-guess upper-guess)))]
               (if (anomalies/anomaly? sol)
                 (reduced sol)
                 (let [l-v (or (::value (::lower sol)) (nth lower-values dim))
@@ -233,7 +244,7 @@
   each dimension."
   ([args] (multi-dimensional-plateau-root-solver args {}))
   ([{::keys [intervals multi-plateau-f]}
-    {::keys [abs-accu guesses max-iter max-passes]
+    {::keys [abs-accu lower-guesses guesses max-iter max-passes upper-guesses]
      :or    {abs-accu   1e-6
              max-iter   1000
              max-passes 10}}]
@@ -250,8 +261,9 @@
                upper-bounds
                abs-accu
                max-iter
-               guesses)
-         var-f (var multi-dimensional-plateau-root-solver)]
+               guesses
+               lower-guesses
+               upper-guesses)]
      (loop [sol sol
             previous-last-values nil
             i 1]
@@ -287,7 +299,9 @@
                        upper-bounds
                        abs-accu
                        max-iter
-                       last-values)]
+                       last-values
+                       nil
+                       nil)]
              (if (anomalies/anomaly? sol)
                sol
                (recur sol last-values (inc i))))))))))
@@ -296,8 +310,10 @@
   :args (s/cat :args (s/keys :req [::intervals ::multi-plateau-f])
           :opts (s/? (s/keys :opt [::abs-accu
                                    ::guesses
+                                   ::lower-guesses
                                    ::max-iter
-                                   ::max-passes])))
+                                   ::max-passes
+                                   ::upper-guesses])))
   :ret (s/or :multi-plateau-solution ::multi-plateau-solution
          :anomaly ::anomalies/anomaly))
 
