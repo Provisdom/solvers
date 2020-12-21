@@ -44,13 +44,9 @@
 (s/def ::upper ::plateau-and-value)
 (s/def ::lower ::plateau-and-value)
 
-(defn- plateau-solution-contains-lower-or-upper?
-  [{::keys [lower upper]}]
-  (or lower upper))
-
 (s/def ::plateau-solution
-  (s/and (s/keys :opt [::lower ::stopped-early? ::upper])
-    plateau-solution-contains-lower-or-upper?))
+  (s/keys :req [(or ::lower ::upper)]
+    :opt [::stopped-early?]))
 
 (s/def ::plateau-solutions
   (s/coll-of ::plateau-solution
