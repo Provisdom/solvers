@@ -785,7 +785,7 @@
              :anomaly ::anomalies/anomaly))
 
 ;;OPTIMIZE NO-DERIVATIVE WITH SIMPLE BOUNDS ONLY
-(defn optimize-cma-evolution!
+(defn optimize-cma-evolution$
   "An implementation of the active Covariance Matrix Adaptation Evolution
   Strategy (CMA-ES) for non-linear, non-convex, non-smooth, global function
   minimization. See https://www.lri.fr/~hansen/cmaesintro.html for more on
@@ -835,7 +835,7 @@
   `::check-by-objective?` - Whether convergence checker uses objective function
   or point value for calculating error."
   ([objective var-lower-bounds var-upper-bounds vars-guess]
-   (optimize-cma-evolution!
+   (optimize-cma-evolution$
      objective var-lower-bounds var-upper-bounds vars-guess {}))
   ([objective var-lower-bounds var-upper-bounds vars-guess
     {::keys [max-iter goal rel-accu abs-accu check-by-objective? sigmas
@@ -885,11 +885,11 @@
           ::value        (objective (double-array pt))})
        (catch TooManyEvaluationsException _
          {::anomalies/message  (format "Max iterations (%d) exceeded." max-iter)
-          ::anomalies/fn       (var optimize-cma-evolution!)
+          ::anomalies/fn       (var optimize-cma-evolution$)
           ::anomalies/category ::anomalies/third-party})
        (catch Exception e
          {::anomalies/message  (str (.getMessage e))
-          ::anomalies/fn       (var optimize-cma-evolution!)
+          ::anomalies/fn       (var optimize-cma-evolution$)
           ::anomalies/category ::anomalies/third-party})))))
 
 (s/def ::sigmas
@@ -928,7 +928,7 @@
   (s/with-gen ::m/int-non-
               #(s/gen (s/int-in 0 1000))))
 
-(s/fdef optimize-cma-evolution!
+(s/fdef optimize-cma-evolution$
   :args (s/cat :objective ::objective
                :var-lower-bounds ::var-lower-bounds
                :var-upper-bounds ::var-upper-bounds

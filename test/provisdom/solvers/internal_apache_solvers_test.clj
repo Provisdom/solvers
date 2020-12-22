@@ -286,19 +286,19 @@
        (apache-solvers/optimize-without-constraints-or-gradient
          #(- (obj-fn1 %)) [0.5 0.5] {::apache-solvers/goal :max})))
 
-(deftest optimize-cma-evolution!-test
-  (is (spec-check apache-solvers/optimize-cma-evolution!))
+(deftest optimize-cma-evolution$-test
+  (is (spec-check apache-solvers/optimize-cma-evolution$))
   (is= {::apache-solvers/value        0.3125
         ::apache-solvers/vector-point [-0.5 0.75]}
        (random/bind-seed
          3
-         (apache-solvers/optimize-cma-evolution!
+         (apache-solvers/optimize-cma-evolution$
            obj-fn1 [-0.5 -0.5] [0.75 0.75] [0.5 0.5])))
   (is= {::apache-solvers/value        -0.3125
         ::apache-solvers/vector-point [-0.5 0.75]}
        (random/bind-seed
          3
-         (apache-solvers/optimize-cma-evolution!
+         (apache-solvers/optimize-cma-evolution$
            #(- (obj-fn1 %)) [-0.5 -0.5] [0.75 0.75] [0.5 0.5]
            {::apache-solvers/goal :max}))))
 

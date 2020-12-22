@@ -215,8 +215,8 @@
           ::nlp/var-intervals var-intervals2}
          {::nlp/bounded-without-evolutionary-solver-type :bobyqa})))
 
-(deftest bounded-nonlinear-programming-including-evolutionary!-test
-  (is (spec-check nlp/bounded-nonlinear-programming-including-evolutionary!
+(deftest bounded-nonlinear-programming-including-evolutionary$-test
+  (is (spec-check nlp/bounded-nonlinear-programming-including-evolutionary$
                   {:coll-check-limit 10
                    :coll-error-limit 10
                    :fspec-iterations 10
@@ -226,7 +226,7 @@
         ::nlp/vector-point [1.1 0.1]}
        (random/bind-seed
          3
-         (nlp/bounded-nonlinear-programming-including-evolutionary!
+         (nlp/bounded-nonlinear-programming-including-evolutionary$
            {::nlp/objective     objective
             ::nlp/vars-guess    vars-guess
             ::nlp/var-intervals var-intervals})))
@@ -234,7 +234,7 @@
         ::nlp/vector-point [1.1 0.1]}
        (random/bind-seed
          3
-         (nlp/bounded-nonlinear-programming-including-evolutionary!
+         (nlp/bounded-nonlinear-programming-including-evolutionary$
            {::nlp/objective     objective
             ::nlp/vars-guess    vars-guess
             ::nlp/var-intervals var-intervals}
@@ -243,7 +243,7 @@
         ::nlp/vector-point [1.1 0.1]}
        (random/bind-seed
          3
-         (nlp/bounded-nonlinear-programming-including-evolutionary!
+         (nlp/bounded-nonlinear-programming-including-evolutionary$
            {::nlp/objective     objective
             ::nlp/vars-guess    vars-guess
             ::nlp/var-intervals var-intervals}
@@ -252,7 +252,7 @@
         ::nlp/vector-point [1.1 0.1]}
        (random/bind-seed
          3
-         (nlp/bounded-nonlinear-programming-including-evolutionary!
+         (nlp/bounded-nonlinear-programming-including-evolutionary$
            {::nlp/objective     objective
             ::nlp/vars-guess    vars-guess
             ::nlp/var-intervals var-intervals}
@@ -261,7 +261,7 @@
         ::nlp/vector-point [1.2564312010957783 -6.845604985308992E-9]}
        (random/bind-seed
          3
-         (nlp/bounded-nonlinear-programming-including-evolutionary!
+         (nlp/bounded-nonlinear-programming-including-evolutionary$
            {::nlp/objective     objective
             ::nlp/vars-guess    vars-guess
             ::nlp/var-intervals var-intervals2})))
@@ -269,7 +269,7 @@
         ::nlp/vector-point [1.256431192726513 -2.4399976876458034E-8]}
        (random/bind-seed
          3
-         (nlp/bounded-nonlinear-programming-including-evolutionary!
+         (nlp/bounded-nonlinear-programming-including-evolutionary$
            {::nlp/objective     objective
             ::nlp/vars-guess    vars-guess
             ::nlp/var-intervals var-intervals2}
@@ -278,7 +278,7 @@
         ::nlp/vector-point [1.1 0.1]}
        (random/bind-seed
          3
-         (nlp/bounded-nonlinear-programming-including-evolutionary!
+         (nlp/bounded-nonlinear-programming-including-evolutionary$
            {::nlp/objective     (fn [x]
                                   (- (objective x)))
             ::nlp/vars-guess    vars-guess

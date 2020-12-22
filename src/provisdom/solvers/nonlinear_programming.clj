@@ -429,7 +429,7 @@
   :ret (s/or :solution (s/keys :req [::vector-point ::value])
              :anomaly ::anomalies/anomaly))
 
-(defn bounded-nonlinear-programming-including-evolutionary!
+(defn bounded-nonlinear-programming-including-evolutionary$
   "This function always includes an evolutionary solver, unlike
   [[bounded-without-evolutionary-nonlinear-programming]].
 
@@ -508,7 +508,7 @@
   derivatives are approximated by finite differences. Recommend setting the
   `::bobyqa-interpolation-points` in [n+2, (n+1)(n+2)/2], where 'n' is the
   number of dimensions."
-  ([args] (bounded-nonlinear-programming-including-evolutionary! args {}))
+  ([args] (bounded-nonlinear-programming-including-evolutionary$ args {}))
   ([{::keys [objective vars-guess var-intervals]}
     {::keys [max-iter goal rel-accu abs-accu check-by-objective?
              bounded-including-evolutionary-solver-type met-bounds-accu sigmas
@@ -555,7 +555,7 @@
                                   {::apache-solvers/bobyqa-interpolation-points bobyqa-interpolation-points
                                    ::apache-solvers/max-iter                    max-iter
                                    ::apache-solvers/goal                        goal})
-                       :cma-es-only #(apache-solvers/optimize-cma-evolution!
+                       :cma-es-only #(apache-solvers/optimize-cma-evolution$
                                        objective var-lower-bounds var-upper-bounds vars-guess
                                        {::apache-solvers/max-iter             max-iter
                                         ::apache-solvers/goal                 goal
@@ -577,7 +577,7 @@
      (cond (anomalies/anomaly? apache-solution) apache-solution
            (nil? apache-solution) {::anomalies/category ::anomalies/no-solve
                                    ::anomalies/message  "No solution."
-                                   ::anomalies/fn       (var bounded-nonlinear-programming-including-evolutionary!)}
+                                   ::anomalies/fn       (var bounded-nonlinear-programming-including-evolutionary$)}
            :else {::value        (::apache-solvers/value apache-solution)
                   ::vector-point (::apache-solvers/vector-point apache-solution)}))))
 
@@ -595,7 +595,7 @@
         :seq (s/coll-of ::one-bounded-including-evolutionary-solver-type
                         :distinct true)))
 
-(s/fdef bounded-nonlinear-programming-including-evolutionary!
+(s/fdef bounded-nonlinear-programming-including-evolutionary$
   :args (s/cat :objective-with-guess-and-intervals ::objective-with-guess-and-intervals
                :opts (s/? (s/keys :opt [::max-iter ::goal ::rel-accu
                                         ::abs-accu ::check-by-objective?
