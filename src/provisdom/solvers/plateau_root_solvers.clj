@@ -289,9 +289,8 @@
                              u (assoc ::upper {::plateau u
                                                ::value   u-v}))))
                        (range (count last-values)))]
-             (or (first (filter anomalies/anomaly? pss))
-               (cond-> {::plateau-solutions pss}
-                 (not done?) (assoc ::reached-max-passes? true))))
+             (cond-> {::plateau-solutions pss}
+               (not done?) (assoc ::reached-max-passes? true)))
            (let [sol (single-pass
                        multi-plateau-f
                        lower-values
