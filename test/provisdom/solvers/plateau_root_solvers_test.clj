@@ -6,7 +6,7 @@
             [provisdom.math.intervals :as intervals]
             [provisdom.solvers.plateau-root-solvers :as plateau]))
 
-;16 seconds
+;22 seconds
 
 (set! *warn-on-reflection* true)
 
@@ -88,13 +88,32 @@
                                    ::plateau/upper {::plateau/plateau 5
                                                     ::plateau/value   5.0}}})))
 
+(deftest single-pass-test
+  (is (spec-check plateau/single-pass))
+  (is= [[1.0] [1.0]]
+    (plateau/single-pass
+      #::plateau{:abs-accu        1e-1
+                 :guesses         [0.7]
+                 :last-values     [0.6]
+                 :lower-values    [0.4]
+                 :max-iter        3
+                 :multi-plateau-f (fn [v]
+                                    (if (empty? v)
+                                      []
+                                      (let [x (first v)
+                                            x (intervals/bound-by-interval
+                                                [m/min-long m/max-long]
+                                                x)]
+                                        [[(long x) (>= x 6.0)]])))
+                 :upper-bounds   [1.0]})))
+
 (deftest multi-dimensional-plateau-root-solver-test
-  (is (spec-check plateau/multi-dimensional-plateau-root-solver
-        {:seed 1607366562094}))
-  (is= {::plateau/plateau-solutions [{::plateau/lower {::plateau/plateau 5
-                                                       ::plateau/value   5.0}
-                                      ::plateau/upper {::plateau/plateau 6
-                                                       ::plateau/value   6.25}}]}
+  (is (spec-check plateau/multi-dimensional-plateau-root-solver))
+  (is= {::plateau/plateau-solutions
+        [{::plateau/lower {::plateau/plateau 5
+                           ::plateau/value   5.0}
+          ::plateau/upper {::plateau/plateau 6
+                           ::plateau/value   6.25}}]}
     (plateau/multi-dimensional-plateau-root-solver
       {::plateau/intervals       [[0.0 10.0]]
        ::plateau/multi-plateau-f (fn [v]

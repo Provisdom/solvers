@@ -14,6 +14,8 @@
 (s/def ::lower-value ::value)
 (s/def ::upper-value ::value)
 (s/def ::values ::vector/vector-finite)
+(s/def ::lower-values ::values)
+(s/def ::last-values ::values)
 (s/def ::guess ::value)
 (s/def ::lower-guess ::value)
 (s/def ::upper-guess ::value)
@@ -29,6 +31,7 @@
 (s/def ::interval ::intervals/finite-interval)
 (s/def ::lower-bound ::value)
 (s/def ::lower-bounds ::values)
+(s/def ::upper-bounds ::values)
 
 (s/def ::intervals
   (s/coll-of ::interval
@@ -182,7 +185,7 @@
                {l-v ::value} lower
                {u-v ::value
                 u   ::plateau} upper
-               done? (<= (- u-v l-v) abs-accu)]
+               done? (<= (- u-v (double l-v)) abs-accu)]
            (if (or done? (>= i max-iter))
              (cond-> current
                (not done?) (assoc ::stopped-early? true)
@@ -199,23 +202,24 @@
          :anomaly ::anomalies/anomaly))
 
 (defn single-pass
-  [multi-plateau-f
-   lower-values
-   last-values
-   upper-bounds
-   abs-accu
-   max-iter
-   guesses
-   lower-guesses
-   upper-guesses]
+  [{::keys [abs-accu
+            guesses
+            last-values
+            lower-guesses
+            lower-values
+            max-iter
+            multi-plateau-f
+            upper-bounds
+            upper-guesses]}]
   (reduce (fn [[low-values values] dim]
-            (let [p-f #(nth (multi-plateau-f (assoc values dim %)) dim)
-                  last-value (nth values dim)
-                  guess (nth guesses dim)
+            (let [p-f #(get (multi-plateau-f (assoc values dim %)) dim 0.0)
+                  upper-bound (get upper-bounds dim m/max-dbl)
+                  last-value (min (get values dim 0.0) upper-bound)
+                  guess (get guesses dim 0.0)
                   lower-guess (when lower-guesses (get lower-guesses dim nil))
                   upper-guess (when upper-guesses (get upper-guesses dim nil))
                   sol (plateau-root-solver
-                        {::interval  [last-value (nth upper-bounds dim)]
+                        {::interval  [last-value upper-bound]
                          ::plateau-f p-f}
                         (cond-> {::abs-accu abs-accu
                                  ::guess    guess
@@ -224,11 +228,24 @@
                           upper-guess (assoc ::upper-guess upper-guess)))]
               (if (anomalies/anomaly? sol)
                 (reduced sol)
-                (let [l-v (or (::value (::lower sol)) (nth lower-values dim))
-                      v (or (::value (::upper sol)) (nth upper-bounds dim))]
+                (let [l-v (or (::value (::lower sol))
+                            (get lower-values dim 0.0))
+                      v (or (::value (::upper sol)) (get upper-bounds dim 0.0))]
                   [(assoc low-values dim l-v) (assoc values dim v)]))))
     [lower-values last-values]
     (range (count last-values))))
+
+(s/fdef single-pass
+  :args (s/cat :args (s/keys :req [::abs-accu
+                                   ::guesses
+                                   ::last-values
+                                   ::lower-values
+                                   ::max-iter
+                                   ::multi-plateau-f
+                                   ::upper-bounds]
+                       :opt [::lower-guesses ::upper-guesses]))
+  :ret (s/or :solution (s/tuple ::lower-values ::last-values)
+         :anomaly ::anomalies/anomaly))
 
 (defn multi-dimensional-plateau-root-solver
   "Multi-dimensional plateau function takes a vector-finite and returns vector
@@ -255,15 +272,15 @@
                    guesses
                    lower-bounds)
          sol (single-pass
-               multi-plateau-f
-               lower-bounds
-               lower-bounds
-               upper-bounds
-               abs-accu
-               max-iter
-               guesses
-               lower-guesses
-               upper-guesses)]
+               (cond-> {::abs-accu        abs-accu
+                        ::guesses         guesses
+                        ::last-values     lower-bounds
+                        ::lower-values    lower-bounds
+                        ::max-iter        max-iter
+                        ::multi-plateau-f multi-plateau-f
+                        ::upper-bounds    upper-bounds}
+                 lower-guesses (assoc ::lower-guesses lower-guesses)
+                 upper-guesses (assoc ::upper-guesses upper-guesses)))]
      (loop [sol sol
             previous-last-values nil
             i 1]
@@ -292,15 +309,13 @@
              (cond-> {::plateau-solutions pss}
                (not done?) (assoc ::reached-max-passes? true)))
            (let [sol (single-pass
-                       multi-plateau-f
-                       lower-values
-                       last-values
-                       upper-bounds
-                       abs-accu
-                       max-iter
-                       last-values
-                       nil
-                       nil)]
+                       {::abs-accu        abs-accu
+                        ::guesses         last-values
+                        ::last-values     last-values
+                        ::lower-values    lower-values
+                        ::max-iter        max-iter
+                        ::multi-plateau-f multi-plateau-f
+                        ::upper-bounds    upper-bounds})]
              (if (anomalies/anomaly? sol)
                sol
                (recur sol last-values (inc i))))))))))
