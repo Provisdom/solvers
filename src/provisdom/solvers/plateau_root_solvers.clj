@@ -212,7 +212,7 @@
             upper-bounds
             upper-guesses]}]
   (reduce (fn [[low-values values] dim]
-            (let [p-f #(get (multi-plateau-f (assoc values dim %)) dim 0.0)
+            (let [p-f #(get (multi-plateau-f (assoc values dim %)) dim [])
                   upper-bound (get upper-bounds dim m/max-dbl)
                   last-value (min (get values dim 0.0) upper-bound)
                   guess (get guesses dim 0.0)
