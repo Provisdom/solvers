@@ -212,7 +212,7 @@
             upper-bounds
             upper-guesses]}]
   (reduce (fn [[low-values values] dim]
-            (let [p-f #(get (multi-plateau-f (assoc values dim %)) dim [])
+            (let [p-f #(get (multi-plateau-f (assoc values dim %)) dim [0 true])
                   upper-bound (get upper-bounds dim m/max-dbl)
                   last-value (min (get values dim 0.0) upper-bound)
                   guess (get guesses dim 0.0)
@@ -291,7 +291,7 @@
                              (let [p-f #(get (multi-plateau-f
                                                (assoc last-values dim %))
                                           dim
-                                          [])
+                                          [0 true])
                                    l-v (get lower-values dim)
                                    u-v (get last-values dim)
                                    [l l-bool] (when l-v (p-f l-v))
@@ -350,7 +350,9 @@
                    " solution than the original multi-plateau-solution.")
          npss (mapv
                 (fn [dim]
-                  (let [p-f #(get (multi-plateau-f (assoc values dim %)) dim [])
+                  (let [p-f #(get (multi-plateau-f (assoc values dim %))
+                               dim
+                               [0 true])
                         plateau-solution (get pss dim {::lower {::plateau 0
                                                                 ::value   0.0}})
                         new-ps (tighten-plateau-solution
