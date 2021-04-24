@@ -287,24 +287,24 @@
        (let [[lower-values last-values] sol
              done? (= last-values previous-last-values)]
          (if (or done? (>= i max-passes))
-           (let [pss (mapv
-                       (fn [dim]
-                         (let [p-f #(nth (multi-plateau-f
-                                           (assoc last-values dim %))
-                                      dim)
-                               l-v (nth lower-values dim)
-                               u-v (nth last-values dim)
-                               [l l-bool] (when l-v (p-f l-v))
-                               [u u-bool] (when (and u-v (not= u-v l-v))
-                                            (p-f u-v))
-                               [l l-v u u-v] (if l-bool
-                                               [nil nil l l-v]
-                                               [l l-v u u-v])]
-                           (cond-> {}
-                             l (assoc ::lower {::plateau l
-                                               ::value   l-v})
-                             u (assoc ::upper {::plateau u
-                                               ::value   u-v}))))
+           (let [pss (mapv (fn [dim]
+                             (let [p-f #(get (multi-plateau-f
+                                               (assoc last-values dim %))
+                                          dim
+                                          [])
+                                   l-v (get lower-values dim)
+                                   u-v (get last-values dim)
+                                   [l l-bool] (when l-v (p-f l-v))
+                                   [u u-bool] (when (and u-v (not= u-v l-v))
+                                                (p-f u-v))
+                                   [l l-v u u-v] (if l-bool
+                                                   [nil nil l l-v]
+                                                   [l l-v u u-v])]
+                               (cond-> {}
+                                 l (assoc ::lower {::plateau l
+                                                   ::value   l-v})
+                                 u (assoc ::upper {::plateau u
+                                                   ::value   u-v}))))
                        (range (count last-values)))]
              (cond-> {::plateau-solutions pss}
                (not done?) (assoc ::reached-max-passes? true)))
@@ -350,8 +350,9 @@
                    " solution than the original multi-plateau-solution.")
          npss (mapv
                 (fn [dim]
-                  (let [p-f #(nth (multi-plateau-f (assoc values dim %)) dim)
-                        plateau-solution (nth pss dim)
+                  (let [p-f #(get (multi-plateau-f (assoc values dim %)) dim [])
+                        plateau-solution (get pss dim {::lower {::plateau 0
+                                                                ::value   0.0}})
                         new-ps (tighten-plateau-solution
                                  {::plateau-f        p-f
                                   ::plateau-solution plateau-solution}
