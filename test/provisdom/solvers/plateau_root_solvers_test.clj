@@ -90,7 +90,8 @@
 
 (deftest single-pass-test
   (is (spec-check plateau/single-pass))
-  (is= [[1.0] [1.0]]
+  (is= {::plateau/last-values  [1.0]
+        ::plateau/lower-values [1.0]}
     (plateau/single-pass
       #::plateau{:abs-accu        1e-1
                  :guesses         [0.7]
@@ -105,7 +106,7 @@
                                                 [m/min-long m/max-long]
                                                 x)]
                                         [[(long x) (>= x 6.0)]])))
-                 :upper-bounds   [1.0]})))
+                 :upper-bounds    [1.0]})))
 
 (deftest multi-dimensional-plateau-root-solver-test
   (is (spec-check plateau/multi-dimensional-plateau-root-solver))
@@ -113,7 +114,12 @@
         [{::plateau/lower {::plateau/plateau 5
                            ::plateau/value   5.0}
           ::plateau/upper {::plateau/plateau 6
-                           ::plateau/value   6.25}}]}
+                           ::plateau/value   6.25}}]
+        ::plateau/single-pass-solutions
+        [{::plateau/last-values  [6.25]
+          ::plateau/lower-values [5.0]}
+         {::plateau/last-values  [6.25]
+          ::plateau/lower-values [5.0]}]}
     (plateau/multi-dimensional-plateau-root-solver
       {::plateau/intervals       [[0.0 10.0]]
        ::plateau/multi-plateau-f (fn [v]
@@ -124,10 +130,16 @@
                                                [m/min-long m/max-long]
                                                x)]
                                        [[(long x) (>= x 6.0)]])))}))
-  (is= {::plateau/plateau-solutions [{::plateau/lower {::plateau/plateau 4
-                                                       ::plateau/value   4.375}
-                                      ::plateau/upper {::plateau/plateau 5
-                                                       ::plateau/value   5.0}}]}
+  (is= {::plateau/plateau-solutions
+        [{::plateau/lower {::plateau/plateau 4
+                           ::plateau/value   4.375}
+          ::plateau/upper {::plateau/plateau 5
+                           ::plateau/value   5.0}}]
+        ::plateau/single-pass-solutions
+        [{::plateau/last-values  [5.0]
+          ::plateau/lower-values [4.375]}
+         {::plateau/last-values  [5.0]
+          ::plateau/lower-values [4.375]}]}
     (plateau/multi-dimensional-plateau-root-solver
       {::plateau/intervals       [[0.0 10.0]]
        ::plateau/multi-plateau-f (fn [v]
@@ -138,14 +150,22 @@
                                                [m/min-long m/max-long]
                                                x)]
                                        [[(long x) (>= x 5.0)]])))}))
-  (is= {::plateau/plateau-solutions [{::plateau/lower {::plateau/plateau 4
-                                                       ::plateau/value   7.5}
-                                      ::plateau/upper {::plateau/plateau 5
-                                                       ::plateau/value   8.75}}
-                                     {::plateau/lower {::plateau/plateau 5
-                                                       ::plateau/value   5.0}
-                                      ::plateau/upper {::plateau/plateau 6
-                                                       ::plateau/value   6.25}}]}
+  (is= {::plateau/plateau-solutions
+        [{::plateau/lower {::plateau/plateau 4
+                           ::plateau/value   7.5}
+          ::plateau/upper {::plateau/plateau 5
+                           ::plateau/value   8.75}}
+         {::plateau/lower {::plateau/plateau 5
+                           ::plateau/value   5.0}
+          ::plateau/upper {::plateau/plateau 6
+                           ::plateau/value   6.25}}]
+        ::plateau/single-pass-solutions
+        [{::plateau/last-values  [5.0 6.25]
+          ::plateau/lower-values [4.375 5.0]}
+         {::plateau/last-values  [8.75 6.25]
+          ::plateau/lower-values [7.5 5.0]}
+         {::plateau/last-values  [8.75 6.25]
+          ::plateau/lower-values [7.5 5.0]}]}
     (plateau/multi-dimensional-plateau-root-solver
       {::plateau/intervals       [[0.0 10.0] [0.0 10.0]]
        ::plateau/multi-plateau-f (fn [v]
@@ -169,7 +189,12 @@
         [{::plateau/lower {::plateau/plateau 5
                            ::plateau/value   5.999999642372131}
           ::plateau/upper {::plateau/plateau 6
-                           ::plateau/value   6.000000238418579}}]}
+                           ::plateau/value   6.000000238418579}}]
+        ::plateau/single-pass-solutions
+        [{::plateau/last-values  [6.25]
+          ::plateau/lower-values [5.0]}
+         {::plateau/last-values  [6.25]
+          ::plateau/lower-values [5.0]}]}
     (plateau/tighten-multi-plateau-solution
       {::plateau/multi-plateau-f
        (fn [v]
@@ -185,7 +210,12 @@
         [{::plateau/lower {::plateau/plateau 5
                            ::plateau/value   5.0}
           ::plateau/upper {::plateau/plateau 6
-                           ::plateau/value   6.25}}]}}))
+                           ::plateau/value   6.25}}]
+        ::plateau/single-pass-solutions
+        [{::plateau/last-values  [6.25]
+          ::plateau/lower-values [5.0]}
+         {::plateau/last-values  [6.25]
+          ::plateau/lower-values [5.0]}]}}))
   (is= {::plateau/plateau-solutions
         [{::plateau/lower {::plateau/plateau 4
                            ::plateau/value   8.124999403953552}
@@ -194,7 +224,14 @@
          {::plateau/lower {::plateau/plateau 5
                            ::plateau/value   5.999999642372131}
           ::plateau/upper {::plateau/plateau 6
-                           ::plateau/value   6.000000238418579}}]}
+                           ::plateau/value   6.000000238418579}}]
+        ::plateau/single-pass-solutions
+        [{::plateau/last-values  [5.0 6.25]
+          ::plateau/lower-values [4.375 5.0]}
+         {::plateau/last-values  [8.75 6.25]
+          ::plateau/lower-values [7.5 5.0]}
+         {::plateau/last-values  [8.75 6.25]
+          ::plateau/lower-values [7.5 5.0]}]}
     (plateau/tighten-multi-plateau-solution
       {::plateau/multi-plateau-f
        (fn [v]
@@ -219,6 +256,13 @@
          {::plateau/lower {::plateau/plateau 5
                            ::plateau/value   5.0}
           ::plateau/upper {::plateau/plateau 6
-                           ::plateau/value   6.25}}]}})))
+                           ::plateau/value   6.25}}]
+        ::plateau/single-pass-solutions
+        [{::plateau/last-values  [5.0 6.25]
+          ::plateau/lower-values [4.375 5.0]}
+         {::plateau/last-values  [8.75 6.25]
+          ::plateau/lower-values [7.5 5.0]}
+         {::plateau/last-values  [8.75 6.25]
+          ::plateau/lower-values [7.5 5.0]}]}})))
 
 #_(ost/unstrument)
