@@ -81,8 +81,6 @@
   (s/keys :req [::plateau-solutions ::single-pass-solutions]
     :opt [::reached-max-passes?]))
 
-
-
 (defn- plateau-update
   [plateau-f plateau-solution-or-anom x-v]
   (if (anomalies/anomaly? plateau-solution-or-anom)
