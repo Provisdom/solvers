@@ -6,11 +6,26 @@
             [provisdom.math.intervals :as intervals]
             [provisdom.solvers.plateau-root-solvers :as plateau]))
 
-;23 seconds
+;96 seconds
 
 (set! *warn-on-reflection* true)
 
 (ost/instrument)
+
+;;;UNIVARIATE
+(deftest plateau-update-test
+  (is (spec-check plateau/plateau-update))
+  (is= {::plateau/lower {::plateau/plateau 2
+                         ::plateau/value   2.0}}
+    (plateau/plateau-update
+      {::plateau/plateau-f        (fn [x]
+                                    [(long (intervals/bound-by-interval
+                                             [m/min-long m/max-long]
+                                             x))
+                                     (>= x 6.0)])
+       ::plateau/plateau-solution {::plateau/lower {::plateau/plateau 0
+                                                    ::plateau/value   0.0}}
+       ::plateau/value            2.0})))
 
 (deftest plateau-root-solver-test
   (is (spec-check plateau/plateau-root-solver))
@@ -88,6 +103,7 @@
                                    ::plateau/upper {::plateau/plateau 5
                                                     ::plateau/value   5.0}}})))
 
+;;;MULTIVARIATE
 (deftest single-pass-test
   (is (spec-check plateau/single-pass))
   (is= {::plateau/last-values  [1.0]
@@ -180,7 +196,8 @@
                                        [[(long (- x (* 0.5 y)))
                                          (>= (- x (* 0.5 y)) 5.0)]
                                         [(long y) (>= y 6.0)]])
-                                     []))})))
+                                     []))}
+      {::plateau/partition-size 1})))
 
 (deftest tighten-multi-plateau-solution-test
   (is (spec-check plateau/tighten-multi-plateau-solution
