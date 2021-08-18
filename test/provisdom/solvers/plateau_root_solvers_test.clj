@@ -200,8 +200,7 @@
       {::plateau/partition-size 1})))
 
 (deftest tighten-multi-plateau-solution-test
-  (is (spec-check plateau/tighten-multi-plateau-solution
-        {:seed 1607368350251}))
+  (is (spec-check plateau/tighten-multi-plateau-solution))
   (is= {::plateau/plateau-solutions
         [{::plateau/lower {::plateau/plateau 5
                            ::plateau/value   5.999999642372131}

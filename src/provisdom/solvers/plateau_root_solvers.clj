@@ -350,45 +350,47 @@
                  lower-guesses (assoc ::lower-guesses lower-guesses)
                  partition-size (assoc ::partition-size partition-size)
                  upper-guesses (assoc ::upper-guesses upper-guesses)))]
-     (loop [sols [sol]
-            previous-last-values nil
-            i 1]
-       (let [{::keys [lower-values last-values]} (peek sols)
-             done? (= last-values previous-last-values)]
-         (if (or done? (>= i max-passes))
-           (let [pss (mapv (fn [dim]
-                             (let [p-f #(get (multi-plateau-f
-                                               (assoc last-values dim %))
-                                          dim
-                                          [0 true])
-                                   l-v (get lower-values dim)
-                                   u-v (get last-values dim)
-                                   [l l-bool] (when l-v (p-f l-v))
-                                   [u u-bool] (when (and u-v (not= u-v l-v))
-                                                (p-f u-v))
-                                   [l l-v u u-v] (if l-bool
-                                                   [nil nil l l-v]
-                                                   [l l-v u u-v])]
-                               (cond-> {}
-                                 l (assoc ::lower {::plateau l
-                                                   ::value   l-v})
-                                 u (assoc ::upper {::plateau u
-                                                   ::value   u-v}))))
-                       (range (count last-values)))]
-             (cond-> {::plateau-solutions     pss
-                      ::single-pass-solutions sols}
-               (not done?) (assoc ::reached-max-passes? true)))
-           (let [sol (single-pass
-                       {::abs-accu        abs-accu
-                        ::guesses         last-values
-                        ::last-values     last-values
-                        ::lower-values    lower-values
-                        ::max-iter        max-iter
-                        ::multi-plateau-f multi-plateau-f
-                        ::upper-bounds    upper-bounds})]
-             (if (anomalies/anomaly? sol)
-               sol
-               (recur (conj sols sol) last-values (inc i))))))))))
+     (if (anomalies/anomaly? sol)
+       sol
+       (loop [sols [sol]
+              previous-last-values nil
+              i 1]
+         (let [{::keys [lower-values last-values]} (peek sols)
+               done? (= last-values previous-last-values)]
+           (if (or done? (>= i max-passes))
+             (let [pss (mapv (fn [dim]
+                               (let [p-f #(get (multi-plateau-f
+                                                 (assoc last-values dim %))
+                                            dim
+                                            [0 true])
+                                     l-v (get lower-values dim)
+                                     u-v (get last-values dim)
+                                     [l l-bool] (when l-v (p-f l-v))
+                                     [u u-bool] (when (and u-v (not= u-v l-v))
+                                                  (p-f u-v))
+                                     [l l-v u u-v] (if l-bool
+                                                     [nil nil l l-v]
+                                                     [l l-v u u-v])]
+                                 (cond-> {}
+                                   l (assoc ::lower {::plateau l
+                                                     ::value   l-v})
+                                   u (assoc ::upper {::plateau u
+                                                     ::value   u-v}))))
+                         (range (count last-values)))]
+               (cond-> {::plateau-solutions     pss
+                        ::single-pass-solutions sols}
+                 (not done?) (assoc ::reached-max-passes? true)))
+             (let [sol (single-pass
+                         {::abs-accu        abs-accu
+                          ::guesses         last-values
+                          ::last-values     last-values
+                          ::lower-values    lower-values
+                          ::max-iter        max-iter
+                          ::multi-plateau-f multi-plateau-f
+                          ::upper-bounds    upper-bounds})]
+               (if (anomalies/anomaly? sol)
+                 sol
+                 (recur (conj sols sol) last-values (inc i)))))))))))
 
 (s/fdef multi-dimensional-plateau-root-solver
   :args (s/cat :args (s/keys :req [::intervals ::multi-plateau-f])
