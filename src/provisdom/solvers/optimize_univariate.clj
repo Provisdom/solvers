@@ -10,10 +10,10 @@
     [provisdom.solvers.internal-apache-solvers :as apache-solvers]))
 
 (defn optimize-univariate
-  "Brent Optimizer.  Search over a `::finite-interval`.
-  `::guess` must be in `finite-interval` and less than the maximum."
+  "Brent Optimizer.  Search over a `::strict-finite-interval`.
+  `::guess` must be in `strict-finite-interval`."
   ([args] (optimize-univariate args {}))
-  ([{::keys [univariate-f finite-interval guess]}
+  ([{::keys [univariate-f strict-finite-interval guess]}
     {::keys [max-iter goal rel-accu abs-accu]
      :or    {goal     :min
              rel-accu 1e-14
@@ -21,7 +21,7 @@
    (let [max-iter (or max-iter 1000)
          sol (apache-solvers/optimize-univariate
                univariate-f
-               finite-interval
+               strict-finite-interval
                guess
                {::apache-solvers/max-iter max-iter
                 ::apache-solvers/goal     goal
@@ -33,7 +33,7 @@
         ::point (::apache-solvers/point sol)}))))
 
 (s/def ::univariate-f ::apache-solvers/univariate-f)
-(s/def ::finite-interval ::apache-solvers/finite-interval)
+(s/def ::strict-finite-interval ::apache-solvers/strict-finite-interval)
 (s/def ::guess ::apache-solvers/initial-guess)
 (s/def ::max-iter ::apache-solvers/max-iter)
 (s/def ::goal ::apache-solvers/goal)
@@ -43,14 +43,17 @@
 (s/def ::point ::m/number)
 
 (s/fdef optimize-univariate
-        :args (s/and (s/cat :args (s/keys :req [::univariate-f ::finite-interval ::guess])
-                            :opts (s/? (s/keys :opt [::max-iter ::goal ::rel-accu ::abs-accu])))
-                     (fn [{:keys [args]}]
-                       (let [{::keys [finite-interval guess]} args]
-                         (and (< (first finite-interval)
-                                 (second finite-interval))
-                              (intervals/in-bounds?
-                                (intervals/bounds finite-interval true false)
-                                guess)))))
-        :ret (s/or :solution (s/keys :req [::value ::point])
-                   :anomaly ::anomalies/anomaly))
+  :args (s/and (s/cat :args (s/keys :req [::guess
+                                          ::strict-finite-interval
+                                          ::univariate-f])
+                 :opts (s/? (s/keys :opt [::abs-accu
+                                          ::goal
+                                          ::max-iter
+                                          ::rel-accu])))
+          (fn [{:keys [args]}]
+            (let [{::keys [strict-finite-interval guess]} args]
+              (intervals/in-bounds?
+                (intervals/bounds strict-finite-interval false false)
+                guess))))
+  :ret (s/or :solution (s/keys :req [::value ::point])
+         :anomaly ::anomalies/anomaly))

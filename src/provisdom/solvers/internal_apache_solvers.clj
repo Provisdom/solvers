@@ -87,6 +87,7 @@
 (s/def ::vector-point ::vector/vector)
 (s/def ::weighted-constraint-errors ::vector/vector)
 (s/def ::finite-interval ::intervals/finite-interval)
+(s/def ::strict-finite-interval (intervals/strict-interval-spec ::m/finite))
 
 (s/def ::weighted-constraint-errors-and-vector-point
   (s/keys :req [::weighted-constraint-errors ::vector-point]))
@@ -293,10 +294,10 @@
 
 ;;;UNIVARIATE OPTIMIZE
 (defn optimize-univariate
-  "Brent Optimizer.  Search over a `finite-interval`.
-  `initial-guess` must be in `finite-interval` and less than the maximum."
-  ([univariate-f finite-interval initial-guess]
-   (optimize-univariate univariate-f finite-interval initial-guess {}))
+  "Brent Optimizer.  Search over a `strict-finite-interval`.
+  `initial-guess` must be in `strict-finite-interval`."
+  ([univariate-f strict-finite-interval initial-guess]
+   (optimize-univariate univariate-f strict-finite-interval initial-guess {}))
   ([univariate-f [low high] initial-guess
     {::keys [max-iter goal rel-accu abs-accu]
      :or    {goal     :min
@@ -322,18 +323,16 @@
 
 (s/fdef optimize-univariate
   :args (s/and (s/cat :univariate-f ::univariate-f
-                      :finite-interval ::finite-interval
+                      :strict-finite-interval ::strict-finite-interval
                       :initial-guess ::initial-guess
                       :opts (s/? (s/keys :opts [::max-iter
                                                 ::goal
                                                 ::rel-accu
                                                 ::abs-accu])))
-               (fn [{:keys [finite-interval initial-guess]}]
-                 (and (< (first finite-interval)
-                         (second finite-interval))
-                      (intervals/in-bounds?
-                        (intervals/bounds finite-interval true false)
-                        initial-guess))))
+               (fn [{:keys [strict-finite-interval initial-guess]}]
+                 (intervals/in-bounds?
+                   (intervals/bounds strict-finite-interval false false)
+                   initial-guess)))
   :ret (s/or :solution ::value-and-point
              :anomaly ::anomalies/anomaly))
 
