@@ -1,12 +1,9 @@
 (ns provisdom.solvers.linear-programming
   (:require
     [clojure.spec.alpha :as s]
-    [clojure.spec.gen.alpha :as gen]
-    [clojure.spec.test.alpha :as st]
-    [orchestra.spec.test :as ost]
-    [provisdom.utility-belt.anomalies :as anomalies]
     [provisdom.math.vector :as vector]
-    [provisdom.solvers.internal-apache-solvers :as apache-solvers]))
+    [provisdom.solvers.internal-apache-solvers :as apache-solvers]
+    [provisdom.utility-belt.anomalies :as anomalies]))
 
 (defn linear-programming
   "Two-phase Simplex Method. Returns map of {::value, ::vector-point}.

@@ -2,17 +2,14 @@
   (:require
     [clojure.spec.alpha :as s]
     [clojure.spec.gen.alpha :as gen]
-    [clojure.spec.test.alpha :as st]
-    [orchestra.spec.test :as ost]
-    [provisdom.utility-belt.anomalies :as anomalies]
-    [provisdom.utility-belt.async :as async]
     [provisdom.math.core :as m]
-    [provisdom.math.vector :as vector]
-    [provisdom.math.tensor :as tensor]
     [provisdom.math.derivatives :as derivatives]
     [provisdom.math.intervals :as intervals]
+    [provisdom.math.vector :as vector]
     [provisdom.solvers.internal-apache-solvers :as apache-solvers]
-    [provisdom.solvers.internal-wrappers :as wrap]))
+    [provisdom.solvers.internal-wrappers :as wrap]
+    [provisdom.utility-belt.anomalies :as anomalies]
+    [provisdom.utility-belt.async :as async]))
 
 (s/def ::parallel? boolean?)
 

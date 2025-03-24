@@ -1,32 +1,20 @@
 (ns provisdom.solvers.neanderthal.ordinary-regression
   (:require
     [clojure.spec.alpha :as s]
-    [clojure.spec.gen.alpha :as gen]
-    [clojure.spec.test.alpha :as st]
-    [orchestra.spec.test :as ost]
-    [provisdom.utility-belt.anomalies :as anomalies]
     [provisdom.math.core :as m]
-    [provisdom.math.vector :as vector]
     [provisdom.math.matrix :as mx]
-    [provisdom.neanderthal-matrix.core :as neanderthal-mx]))
+    [provisdom.math.vector :as vector]
+    [provisdom.neanderthal-matrix.core :as neanderthal-mx]
+    [provisdom.utility-belt.anomalies :as anomalies]))
 
-(s/def ::x-mx
-  (s/and ::mx/matrix-finite
-         (fn [mx]
-           (and
-             (>= (mx/rows mx) 2)
-             (pos? (mx/columns mx))))))
-
-(s/def ::y
-  (s/and ::vector/vector-finite
-         (fn [y]
-           (>= (count y) 2))))
+(s/def ::x-mx (mx/matrix-finite-spec {:min-columns 1 :min-rows 2}))
+(s/def ::y (vector/vector-finite-spec {:min-count 2}))
 
 (s/def ::condition-number-max ::neanderthal-mx/condition-number)
 
-(s/def ::weights ::vector/vector-num)
 (s/def ::mean-squared-error ::m/non-)
 (s/def ::standard-squared-error ::m/non-)
+(s/def ::weights ::vector/vector-num)
 
 (defn simple-ordinary-regression
   ""
@@ -37,15 +25,16 @@
      :or    {condition-number-max 1e15}}]
    (let [y-nmx (neanderthal-mx/matrix->neanderthal-matrix (mx/column-matrix y))
          x-nmx (neanderthal-mx/matrix->neanderthal-matrix x-mx)
-         soln (neanderthal-mx/lls-with-error x-nmx y-nmx)]
-     (if (anomalies/anomaly? soln)
-       soln
+         sol (neanderthal-mx/lls-with-error x-nmx y-nmx)]
+     (if (anomalies/anomaly? sol)
+       sol
        (let [{::neanderthal-mx/keys [mean-squared-errors
                                      standard-squared-errors
                                      solution
-                                     condition-number]} soln
+                                     condition-number]} sol
              mse (neanderthal-mx/neanderthal-matrix->matrix mean-squared-errors)
-             sse (neanderthal-mx/neanderthal-matrix->matrix standard-squared-errors)
+             sse (neanderthal-mx/neanderthal-matrix->matrix
+                   standard-squared-errors)
              weights (first (neanderthal-mx/neanderthal-matrix->matrix
                               (neanderthal-mx/transpose solution)))
              mean-squared-error (max 0.0 (first (mx/diagonal mse)))
@@ -76,6 +65,6 @@
                (fn [{:keys [x-mx y]}]
                  (= (mx/rows x-mx) (count y))))
   :ret (s/or :anomaly ::anomalies/anomaly
-             :solution (s/keys :req [::weights
-                                     ::mean-squared-error
-                                     ::standard-squared-error])))
+             :solution (s/keys :req [::mean-squared-error
+                                     ::standard-squared-error
+                                     ::weights])))

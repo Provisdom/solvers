@@ -1,14 +1,11 @@
 (ns provisdom.solvers.iterative-linear-least-squares
   (:require
     [clojure.spec.alpha :as s]
-    [clojure.spec.gen.alpha :as gen]
-    [clojure.spec.test.alpha :as st]
-    [orchestra.spec.test :as ost]
-    [provisdom.utility-belt.anomalies :as anomalies]
     [provisdom.math.core :as m]
-    [provisdom.math.vector :as vector]
     [provisdom.math.matrix :as mx]
-    [provisdom.solvers.internal-apache-solvers :as apache-solvers]))
+    [provisdom.math.vector :as vector]
+    [provisdom.solvers.internal-apache-solvers :as apache-solvers]
+    [provisdom.utility-belt.anomalies :as anomalies]))
 
 (defn iterative-linear-least-squares
   "Normally, use an LLS algorithm from a matrix library instead of this one.

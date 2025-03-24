@@ -2,14 +2,12 @@
   (:require
     [clojure.spec.alpha :as s]
     [clojure.spec.gen.alpha :as gen]
-    [clojure.spec.test.alpha :as st]
-    [orchestra.spec.test :as ost]
-    [provisdom.math.core :as m]
-    [provisdom.math.vector :as vector]
-    [provisdom.math.matrix :as mx]
-    [provisdom.math.tensor :as tensor]
     [provisdom.apache-math.apache-matrix :as apache-mx]
     [provisdom.math.arrays :as arrays]
+    [provisdom.math.core :as m]
+    [provisdom.math.matrix :as mx]
+    [provisdom.math.tensor :as tensor]
+    [provisdom.math.vector :as vector]
     [provisdom.utility-belt.anomalies :as anomalies])
   (:import [de.xypron.jcobyla Cobyla Calcfc CobylaExitStatus]
            [com.joptimizer.optimizers OptimizationRequest
@@ -38,7 +36,7 @@
            (or (not lhs)
                (= (mx/rows lhs) (count rhs))))))
 
-(s/def ::apache-quadratic-objective ::apache-mx/positive-definite-apache-matrix-finite)
+(s/def ::apache-quadratic-objective ::apache-mx/pos-definite-apache-matrix-finite)
 
 (defn quadratic-programming-joptimizer
   "Minimizes (1/2) x^T P x + q^T x over x, where 'P' is the

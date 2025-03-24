@@ -1,13 +1,10 @@
 (ns provisdom.solvers.optimize-univariate
   (:require
     [clojure.spec.alpha :as s]
-    [clojure.spec.gen.alpha :as gen]
-    [clojure.spec.test.alpha :as st]
-    [orchestra.spec.test :as ost]
-    [provisdom.utility-belt.anomalies :as anomalies]
-    [provisdom.math.intervals :as intervals]
     [provisdom.math.core :as m]
-    [provisdom.solvers.internal-apache-solvers :as apache-solvers]))
+    [provisdom.math.intervals :as intervals]
+    [provisdom.solvers.internal-apache-solvers :as apache-solvers]
+    [provisdom.utility-belt.anomalies :as anomalies]))
 
 (defn optimize-univariate
   "Brent Optimizer.  Search over a `::strict-finite-interval`.

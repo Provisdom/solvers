@@ -1,34 +1,37 @@
 (ns provisdom.solvers.plateau-root-solvers-test
-  (:require [clojure.test :refer :all]
-            [orchestra.spec.test :as ost]
-            [provisdom.test.core :refer :all]
-            [provisdom.math.core :as m]
-            [provisdom.math.intervals :as intervals]
-            [provisdom.solvers.plateau-root-solvers :as plateau]))
+  (:require
+    [clojure.spec.test.alpha :as st]
+    [clojure.test :refer :all]
+    [provisdom.math.core :as m]
+    [provisdom.math.intervals :as intervals]
+    [provisdom.solvers.plateau-root-solvers :as plateau]
+    [provisdom.test.core :refer :all]))
 
 ;96 seconds
 
 (set! *warn-on-reflection* true)
 
-(ost/instrument)
-
 ;;;UNIVARIATE
 (deftest plateau-update-test
-  (is (spec-check plateau/plateau-update))
-  (is= {::plateau/lower {::plateau/plateau 2
-                         ::plateau/value   2.0}}
-    (plateau/plateau-update
-      {::plateau/plateau-f        (fn [x]
-                                    [(long (intervals/bound-by-interval
-                                             [m/min-long m/max-long]
-                                             x))
-                                     (>= x 6.0)])
-       ::plateau/plateau-solution {::plateau/lower {::plateau/plateau 0
-                                                    ::plateau/value   0.0}}
-       ::plateau/value            2.0})))
+  (with-instrument `plateau/plateau-update
+    (is (spec-check plateau/plateau-update)))
+  (with-instrument (st/instrumentable-syms)
+    (is= {::plateau/lower {::plateau/plateau 2
+                           ::plateau/value   2.0}}
+      (plateau/plateau-update
+        {::plateau/plateau-f        (fn [x]
+                                      [(long (intervals/bound-by-interval
+                                               [m/min-long m/max-long]
+                                               x))
+                                       (>= x 6.0)])
+         ::plateau/plateau-solution {::plateau/lower {::plateau/plateau 0
+                                                      ::plateau/value   0.0}}
+         ::plateau/value            2.0}))))
 
 (deftest plateau-root-solver-test
-  (is (spec-check plateau/plateau-root-solver))
+  (with-instrument `plateau/plateau-root-solver
+    (is (spec-check plateau/plateau-root-solver)))
+  (with-instrument (st/instrumentable-syms)
   (is= {::plateau/lower {::plateau/plateau 5
                          ::plateau/value   5.0}
         ::plateau/upper {::plateau/plateau 6
@@ -68,10 +71,12 @@
                              [(long (intervals/bound-by-interval
                                       [m/min-long m/max-long]
                                       x))
-                              (>= x 11.0)])})))
+                              (>= x 11.0)])}))))
 
 (deftest tighten-plateau-solution-test
-  (is (spec-check plateau/tighten-plateau-solution))
+  (with-instrument `plateau/tighten-plateau-solution
+    (is (spec-check plateau/tighten-plateau-solution)))
+  (with-instrument (st/instrumentable-syms)
   (is= {::plateau/lower {::plateau/plateau 5
                          ::plateau/value   5.999999642372131}
         ::plateau/upper {::plateau/plateau 6
@@ -101,11 +106,13 @@
        ::plateau/plateau-solution {::plateau/lower {::plateau/plateau 4
                                                     ::plateau/value   4.375}
                                    ::plateau/upper {::plateau/plateau 5
-                                                    ::plateau/value   5.0}}})))
+                                                    ::plateau/value   5.0}}}))))
 
 ;;;MULTIVARIATE
 (deftest single-pass-test
-  (is (spec-check plateau/single-pass))
+  (with-instrument `plateau/single-pass
+    (is (spec-check plateau/single-pass)))
+  (with-instrument (st/instrumentable-syms)
   (is= {::plateau/last-values  [1.0]
         ::plateau/lower-values [1.0]}
     (plateau/single-pass
@@ -122,10 +129,12 @@
                                                 [m/min-long m/max-long]
                                                 x)]
                                         [[(long x) (>= x 6.0)]])))
-                 :upper-bounds    [1.0]})))
+                 :upper-bounds    [1.0]}))))
 
 (deftest multi-dimensional-plateau-root-solver-test
-  (is (spec-check plateau/multi-dimensional-plateau-root-solver))
+  (with-instrument `plateau/multi-dimensional-plateau-root-solver
+    (is (spec-check plateau/multi-dimensional-plateau-root-solver)))
+  (with-instrument (st/instrumentable-syms)
   (is= {::plateau/plateau-solutions
         [{::plateau/lower {::plateau/plateau 5
                            ::plateau/value   5.0}
@@ -197,10 +206,12 @@
                                          (>= (- x (* 0.5 y)) 5.0)]
                                         [(long y) (>= y 6.0)]])
                                      []))}
-      {::plateau/partition-size 1})))
+      {::plateau/partition-size 1}))))
 
 (deftest tighten-multi-plateau-solution-test
-  (is (spec-check plateau/tighten-multi-plateau-solution))
+  (with-instrument `plateau/tighten-multi-plateau-solution
+    (is (spec-check plateau/tighten-multi-plateau-solution)))
+  (with-instrument (st/instrumentable-syms)
   (is= {::plateau/plateau-solutions
         [{::plateau/lower {::plateau/plateau 5
                            ::plateau/value   5.999999642372131}
@@ -279,6 +290,4 @@
          {::plateau/last-values  [8.75 6.25]
           ::plateau/lower-values [7.5 5.0]}
          {::plateau/last-values  [8.75 6.25]
-          ::plateau/lower-values [7.5 5.0]}]}})))
-
-#_(ost/unstrument)
+          ::plateau/lower-values [7.5 5.0]}]}}))))

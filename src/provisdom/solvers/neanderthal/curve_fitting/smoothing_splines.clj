@@ -2,15 +2,15 @@
   (:require
     [clojure.spec.alpha :as s]
     [clojure.spec.gen.alpha :as gen]
-    [clojure.spec.test.alpha :as st]
-    [orchestra.spec.test :as ost]
-    [provisdom.utility-belt.anomalies :as anomalies]
     [provisdom.math.core :as m]
     [provisdom.math.vector :as vector]
     [provisdom.neanderthal-matrix.core :as neanderthal-mx]
-    [uncomplicate.neanderthal.native :as native]
+    [provisdom.utility-belt.anomalies :as anomalies]
     [uncomplicate.neanderthal.core :as neanderthal]
-    [uncomplicate.neanderthal.linalg :as linear-algebra]))
+    [uncomplicate.neanderthal.linalg :as linear-algebra]
+    [uncomplicate.neanderthal.native :as native]))
+
+#_(import '(umontreal.ssj.functionfit SmoothingCubicSpline))
 
 ;;;SMOOTHING CUBIC SPLINES
 ;;; Mostly ported from https://github.com/umontreal-simul/ssj/blob/master/src/main/java/umontreal/ssj/functionfit/SmoothingCubicSpline.java
@@ -20,15 +20,13 @@
 
 (s/def ::x-vals
   (s/with-gen
-    (s/and (s/coll-of ::m/finite
-                      :kind clojure.core/vector?
-                      :into []
-                      :min-count 4)
+    (s/and (vector/vector-finite-spec {:min-count 4})
            (fn [x] (->> x
                         (partition 2)
                         (every? (fn [[x1 x2]] (> x2 x1))))))
     #(gen/bind
-       (s/gen (s/coll-of (s/double-in :infinite? false :NaN? false) :min-count 4))
+       (s/gen
+         (s/coll-of (s/double-in :infinite? false :NaN? false) :min-count 4))
        (fn [x]
          (gen/return (->> x
                           set
@@ -116,7 +114,6 @@
                    (* (aget w j) (aget q (+ j 2))))))
 
     q))
-#_(import '(umontreal.ssj.functionfit SmoothingCubicSpline))
 
 (defn- resolver
   [x-array y-array v-array smoothing-parameter]

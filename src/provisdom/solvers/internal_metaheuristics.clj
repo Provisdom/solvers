@@ -1,11 +1,7 @@
 (ns provisdom.solvers.internal-metaheuristics
   (:require
-    [clojure.spec.alpha :as s]
-    [clojure.spec.gen.alpha :as gen]
-    [clojure.spec.test.alpha :as st]
-    [orchestra.spec.test :as ost]
-    [provisdom.math.core :as m]
-    [clojure.set :only [intersection difference]])
+    [clojure.set :only [intersection difference]]
+    [provisdom.math.core :as m])
   (:import [java.util ArrayList Collections]))
 
 ;;;Each particle could follow different rules; 
@@ -47,9 +43,10 @@
   :plantlist :gbest :gworst :minseed :maxseed :sigmaInit :sigmaFinal)
 
 (defn- init-plant [nDimensions max]
-  (agent {:seedlist (list),
-          :position (double-array (for [i (range nDimensions)] (rand max))),
-          :pfit     0.0, :tfit 0.0}))
+  (agent {:seedlist (list)
+          :position (double-array (for [i (range nDimensions)] (rand max)))
+          :pfit     0.0
+          :tfit     0.0}))
 
 (defn- init-population
   [nPlants nDimensions nSeedMin nSeedMax sigmaInit sigmaFinal max]
@@ -57,12 +54,13 @@
         gbest (init-plant nDimensions max)
         gworst (init-plant nDimensions max)]
     (agent (struct population plants gbest gworst (int nSeedMin) (int nSeedMax)
-                   sigmaInit sigmaFinal))))
+             sigmaInit sigmaFinal))))
 
 (defn- set-bestworst [population ftype]
   (let [plants (for [p (:plantlist population)] @p)
         sorted (sort-by :pfit ftype plants)]
-    (assoc population :gbest (agent (first sorted)) :gworst (agent (last sorted)))))
+    (assoc population :gbest (agent (first sorted))
+                      :gworst (agent (last sorted)))))
 
 ;; eval seeds
 (defn- eval-seed [seed fitness]
@@ -92,13 +90,13 @@
         sigmaInit (double (:sigmaInit population))
         sigmaFinal (double (:sigmaFinal population))
         nSeeds (int (+ (* (/ (- pfit gworstfit) (- gbestfit gworstfit))
-                          maxSeed)
-                       (* (/ (- pfit gbestfit) (- gworstfit gbestfit))
-                          minSeed)))
+                         maxSeed)
+                      (* (/ (- pfit gbestfit) (- gworstfit gbestfit))
+                        minSeed)))
         sigma (+ (* (/ (m/pow (- maxIt iteration) modulation)
-                       (m/pow maxIt modulation))
-                    (- sigmaInit sigmaFinal))
-                 sigmaFinal)
+                      (m/pow maxIt modulation))
+                   (- sigmaInit sigmaFinal))
+                sigmaFinal)
         newSeeds (map (fn [_] (create-new-seed pos sigma)) (range nSeeds))]
     (assoc plant :seedlist newSeeds)))
 
@@ -120,7 +118,7 @@
   ;; generate new seeds for each plant-agent
   (if DEBUG? (println "creating new seeds..."))
   (dorun (map #(send % generate-seeds @population maxIt modulation iteration)
-              (:plantlist @population)))
+           (:plantlist @population)))
   (apply await (:plantlist @population))
   (if DEBUG?
     (println "no. of seeds:" (count (for [p (:plantlist @population) seeds
@@ -134,7 +132,7 @@
   (send population competition ftype nPlantsMax 1)
   (await population)
   (if DEBUG? (println "best in generation" iteration ":"
-                      (:pfit @(:gbest @population)) "\n---")))
+               (:pfit @(:gbest @population)) "\n---")))
 
 (defn iwo
   "Starts the IWO algorithm. Algorithm based on 
@@ -157,7 +155,7 @@
   [fitness ftype dim nplants nplants-max seed-min seed-max
    sigma-init sigma-final modulation max-iterations max-feat]
   (let [population (init-population nplants dim seed-min seed-max sigma-init
-                                    sigma-final max-feat)]
+                     sigma-final max-feat)]
     ;; one time eval of initial plants
     (dorun (map #(send % eval-seed fitness) (:plantlist @population)))
     (apply await (:plantlist @population))
@@ -166,8 +164,8 @@
     ; start IWO
     (dorun (map (fn [i]
                   (grow fitness ftype population max-iterations nplants-max
-                        modulation i))
-                (range max-iterations)))
+                    modulation i))
+             (range max-iterations)))
     ; return best solution
     @(:gbest @population)))
 
@@ -191,15 +189,15 @@
 (defn- init-particle
   [nDimensions max]
   (agent (struct particle
-                 (double-array (for [i (range nDimensions)] (rand max)))
-                 (double-array (for [i (range nDimensions)] (rand max)))
-                 (double-array (replicate nDimensions 1.0))
-                 m/max-dbl)))
+           (double-array (for [i (range nDimensions)] (rand max)))
+           (double-array (for [i (range nDimensions)] (rand max)))
+           (double-array (replicate nDimensions 1.0))
+           m/max-dbl)))
 
 (defn- init-swarm
   [nParticles nDimensions vmaxDelta nHistoryFitness max]
   (let [particles (map (fn [_] (init-particle nDimensions max))
-                       (range nParticles))
+                    (range nParticles))
         best (init-particle nDimensions max)
         vmax (agent (double-array (repeat nDimensions (* vmaxDelta max))))
         hfit (agent (double-array (replicate nHistoryFitness m/max-dbl)))]
@@ -229,16 +227,16 @@
 
         ; update velocity
         ^doubles newvel (amap vel idx ret
-                              (+ (* c1 phi1 (- (aget gbestpos idx) (aget pos idx)))
-                                 (* c2 phi2 (- (aget pbestpos idx) (aget pos idx)))
-                                 (* (aget vel idx))))
+                          (+ (* c1 phi1 (- (aget gbestpos idx) (aget pos idx)))
+                            (* c2 phi2 (- (aget pbestpos idx) (aget pos idx)))
+                            (* (aget vel idx))))
         ;velocity clamping
         ^doubles vmax @vmaxVec
         ^doubles clampvel (amap newvel i ret
-                                (if (< (m/abs (aget newvel i)) (aget vmax i))
-                                  (aget newvel i)
-                                  (* (/ (aget vmax i) (m/abs (aget newvel i)))
-                                     (aget newvel i))))
+                            (if (< (m/abs (aget newvel i)) (aget vmax i))
+                              (aget newvel i)
+                              (* (/ (aget vmax i) (m/abs (aget newvel i)))
+                                (aget newvel i))))
 
         ; update position
         newpos (amap pos idx ret (+ (aget pos idx) (aget clampvel idx)))
@@ -260,9 +258,9 @@
 (defn- update-hfit [^doubles hfit gbest]
   (let [gbestfit (double (:pbestfit @gbest))]
     (amap hfit i ret
-          (if (= i 0)
-            gbestfit
-            (aget hfit (- i 1))))))
+      (if (= i 0)
+        gbestfit
+        (aget hfit (- i 1))))))
 
 (defn- update-vmax [^doubles vmax swarm iteration]
   (let [#^doubles nlastfit @(:hfit swarm)
@@ -270,11 +268,11 @@
         prebeta (- 1.0 (* iteration 0.0001))
         beta (if (<= prebeta 0.0001) 0.0001 prebeta)]
     (amap vmax i ret
-          (if (every? (fn [x]
-                        (>= gbestfit x))
-                      nlastfit)
-            (* beta (aget vmax i))
-            (aget vmax i)))))
+      (if (every? (fn [x]
+                    (>= gbestfit x))
+            nlastfit)
+        (* beta (aget vmax i))
+        (aget vmax i)))))
 
 (defn- reset-vmax [vmax vmaxDelta max-feat]
   (double-array (repeat (count vmax) (* vmaxDelta max-feat))))
@@ -301,8 +299,8 @@
 
   ; update particles
   (dorun (map #(send % update-particle fitness ftype (:gbest swarm)
-                     (:vmax swarm) iteration)
-              (:particlelist swarm)))
+                 (:vmax swarm) iteration)
+           (:particlelist swarm)))
   (apply await (:particlelist swarm))
 
   ; update gbest
@@ -338,7 +336,7 @@
   (let [swarm (init-swarm nparticles dim vc-init vc-hist max-feat)]
     (dorun (map (fn [i]
                   (fly fitness ftype swarm i max-feat))
-                (range max-iterations)))
+             (range max-iterations)))
     @(:gbest swarm)))
 ;;;;;;;;GA and ES share a ton of code...
 
@@ -362,32 +360,32 @@
   (let [sigma 100                                           ;; 100 seems to be fine
         alpha 1
         dist-sum (reduce +
-                         (for [other (:poplist popu)]
-                           (share (euclidean
-                                    (double-array (:chromosome ind))
-                                    (double-array (:chromosome other)))
-                                  sigma
-                                  alpha)))]
+                   (for [other (:poplist popu)]
+                     (share (euclidean
+                              (double-array (:chromosome ind))
+                              (double-array (:chromosome other)))
+                       sigma
+                       alpha)))]
     (assoc ind :fitness (/ (:fitness ind) dist-sum))))
 
 ;;;shared
 (defn- rand-int-es
   [max number]
   (map (fn [_] (* max (rand)))
-       (range number)))                                     ;need lazy-rnd
+    (range number)))                                        ;need lazy-rnd
 
 (defn- rand-int-ga
   [max number]
   (map (fn [_] (int (* max (rand))))
-       (range number)))
+    (range number)))
 
 (defn- generate-chromosome-es ^doubles
-[^long n ^long bits]
+  [^long n ^long bits]
   (let [max (int (- (m/pow 2 bits) 1))]
     (double-array (rand-int-es max n))))
 
 (defn- generate-chromosome-ga ^ints
-[^long n ^long bits]
+  [^long n ^long bits]
   (let [max (int (- (m/pow 2 bits) 1))]
     (int-array (rand-int-ga max n))))
 
@@ -396,25 +394,25 @@
   {:tag        0
    :chromosome (generate-chromosome-es n bits)
    :steps      (double-array (map #(* 10 %)
-                                  (take 22 (repeatedly rand))))
+                               (take 22 (repeatedly rand))))
    :fitness    0})
 
 (defn- init-individual-ga
   [n bits]
   (struct individual 0 (generate-chromosome-ga n bits)
-          (map #(* 10 %)
-               (take 22 (repeatedly rand))) 0))
+    (map #(* 10 %)
+      (take 22 (repeatedly rand))) 0))
 
 (defn- init-population-es [n dim bits]
   (let [poplist (map (fn [_]
                        (init-individual-es dim bits))
-                     (range n))]
+                  (range n))]
     {:poplist poplist}))
 
 (defn- init-population-ga [n dim bits]
   (let [poplist (map (fn [_]
                        (init-individual-ga dim bits))
-                     (range n))]
+                  (range n))]
     {:poplist poplist}))
 
 (defn chromo-to-phenotype-es
@@ -445,7 +443,7 @@
   (let [agentlist (for [ind (:poplist popu) :when (= (:tag ind) 1)]
                     (agent ind))]
     (dorun (map #(send %1 evaluate-individual-es fitness)
-                agentlist))
+             agentlist))
     (apply await agentlist)
     (let [children (for [agent agentlist]
                      @agent)
@@ -458,12 +456,12 @@
   (let [agentlist (for [ind (:poplist popu) :when (= (:tag ind) 1)]
                     (agent ind))]
     (dorun (map #(send %1 evaluate-individual-ga fitness)
-                agentlist))
+             agentlist))
     (apply await agentlist)
     ;; fitness sharing
     (if fs? (do
               (dorun (map #(send %1 fitness-sharing popu)
-                          agentlist))
+                       agentlist))
               (apply await agentlist)))
     (let [children (for [agent agentlist]
                      @agent)
@@ -476,7 +474,7 @@
   (let [agentlist (for [ind (:poplist popu)]
                     (agent ind))]
     (dorun (map #(send %1 evaluate-individual-es fitness)
-                agentlist))
+             agentlist))
     (apply await agentlist)
     (assoc popu :poplist (for [agent agentlist]
                            @agent))))
@@ -485,7 +483,7 @@
   (let [agentlist (for [ind (:poplist popu)]
                     (agent ind))]
     (dorun (map #(send %1 evaluate-individual-ga fitness)
-                agentlist))
+             agentlist))
     (apply await agentlist)
     (assoc popu :poplist (for [agent agentlist]
                            @agent))))
@@ -525,19 +523,19 @@
         bound 0.5
         tau (/ 1 (m/sqrt (* 2 (m/sqrt dim))))
         tauprime-rand (* (/ 1 (m/sqrt (* 2 dim)))
-                         (normal 0 1))
+                        (normal 0 1))
         ^doubles new-steps-raw (amap steps i ret
-                                     (* (aget steps i)
-                                        (m/exp m/E (+ tauprime-rand
-                                                      (* tau (normal 0 1))))))
+                                 (* (aget steps i)
+                                   (m/exp m/E (+ tauprime-rand
+                                                (* tau (normal 0 1))))))
         ^doubles new-steps (amap new-steps-raw i ret
-                                 (if (< (aget new-steps-raw i) bound)
-                                   bound
-                                   (aget new-steps-raw i)))
+                             (if (< (aget new-steps-raw i) bound)
+                               bound
+                               (aget new-steps-raw i)))
         new-pos (amap chromosome i ret
-                      (+ (aget chromosome i)
-                         (* (aget new-steps i)
-                            (normal 0 1))))]
+                  (+ (aget chromosome i)
+                    (* (aget new-steps i)
+                      (normal 0 1))))]
     (list new-pos new-steps)))
 
 (defn- do-offspring-es
@@ -559,8 +557,11 @@
 (defn- survivor-selection-es
   [popu ftype popsize]
   (when DEBUG? (println "Survivor Selection..."))
-  (let [survivors (take popsize (sort-by :fitness ftype (for [i (:poplist popu) :when (= (:tag i) 1)]
-                                                          i)))]
+  (let [survivors (take popsize
+                    (sort-by :fitness
+                      ftype
+                      (for [i (:poplist popu) :when (= (:tag i) 1)]
+                        i)))]
     (assoc popu :poplist survivors)))
 
 (defn- parent-selection-es
@@ -569,8 +570,8 @@
   (let [parents (scramble (take (* factor popsize) (cycle (:poplist popu))))
         splitted (split-at (* (/ factor 2) popsize) parents)]
     (map #(list %1 %2)
-         (nth splitted 0)
-         (nth splitted 1))))
+      (nth splitted 0)
+      (nth splitted 1))))
 
 ;;(def foo (init-population 10 22 8))
 ;;(count (parent-selection foo 0.4 10))
@@ -591,8 +592,8 @@
         popu-evaluated (evaluate-all-firstrun-es popu fitness)]
     (loop [runs max-iterations popu popu-evaluated]
       (if DEBUG? (println "best in generation:"
-                          (:fitness (first (sort-by :fitness ftype
-                                                    (:poplist popu))))))
+                   (:fitness (first (sort-by :fitness ftype
+                                      (:poplist popu))))))
       (if (zero? runs)
         (first (sort-by :fitness ftype (:poplist popu)))
         (let [parents (parent-selection-es popu popsize offsp-factor)
@@ -603,9 +604,9 @@
                                                   (assoc i :tag 0)))]
           (if DEBUG? (do (println "no. parent pairs:" (count parents))
                          (println "no. parents + children:"
-                                  (count (:poplist popu-with-children)))
+                           (count (:poplist popu-with-children)))
                          (println "no. survivors: "
-                                  (count (:poplist popu-surv)))))
+                           (count (:poplist popu-surv)))))
           (recur (dec runs) new-pop))))))
 
 ;;;GENETIC ALGORITHM
@@ -626,12 +627,12 @@
   (let [split-pos (nth (range 1 bits) (rand-int (- bits 1)))
         split-length (- bits split-pos)
         result (map #(gene-crossover %1 %2 split-length)
-                    chromo1
-                    chromo2)
+                 chromo1
+                 chromo2)
         c1-new (map #(first %1)
-                    result)
+                 result)
         c2-new (map #(second %1)
-                    result)]
+                 result)]
     (list c1-new c2-new)))
 
 ;;(mutation '(34 21 57 56 11 10) 8 0.25) 
@@ -674,12 +675,12 @@
         p2st (:steps p2)
         childc (map (fn [c1 c2]
                       (if (= (int (* 2 (rand))) 0) c1 c2))
-                    p1ch
-                    p2ch)
+                 p1ch
+                 p2ch)
         childs (map (fn [s1 s2]
                       (if (= (int (* 2 (rand))) 0) s1 s2))
-                    p1st
-                    p2st)]
+                 p1st
+                 p2st)]
     (list childc childs)))
 
 (defn- adapted-mutation-ga
@@ -690,13 +691,13 @@
         tauprime-rand (* (/ 1 (m/sqrt (* 2 dim))) (normal 0 1))
         new-steps-raw (for [s steps]
                         (* s (m/exp (+ tauprime-rand
-                                       (* tau (normal 0 1))))))
+                                      (* tau (normal 0 1))))))
         new-steps (map (fn [s]
                          (if (< s bound) bound s))
-                       new-steps-raw)
+                    new-steps-raw)
         new-pos (map (fn [c s]
                        (+ c (* s (normal 0 1))))
-                     chromosome new-steps)]
+                  chromosome new-steps)]
     (list new-pos new-steps)))
 
 (defn- do-offspring-adapted
@@ -726,9 +727,10 @@
         size-rest (- popsize size-top)
         splitted (split-at size-top sorted-all)
         top-percent-members (nth splitted 0)
-        rest-offspring (take size-rest (sort-by :fitness ftype
-                                                (for [i (nth splitted 1)
-                                                      :when (if (= (:tag i) 1) true)] i)))]
+        rest-offspring (take size-rest
+                         (sort-by :fitness ftype
+                           (for [i (nth splitted 1)
+                                 :when (if (= (:tag i) 1) true)] i)))]
     (assoc popu :poplist (concat top-percent-members rest-offspring))))
 
 (defn- parent-selection-ga
@@ -743,8 +745,8 @@
                    (split-at popsize ext-parents)
                    (split-at (/ popsize 2) ext-parents))]
     (map #(list %1 %2)
-         (nth splitted 0)
-         (nth splitted 1))))
+      (nth splitted 0)
+      (nth splitted 1))))
 
 (defn ga
   "Starts the GA algorithm.
@@ -766,22 +768,22 @@
     (loop [runs max-iterations popu popu-evaluated]
       (when DEBUG?
         (println "best:"
-                 (:fitness (first (sort-by :fitness ftype
-                                           (:poplist popu))))))
+          (:fitness (first (sort-by :fitness ftype
+                             (:poplist popu))))))
       (if (zero? runs)
         (first (sort-by :fitness ftype (:poplist popu)))
         (let [parents (parent-selection-ga popu ftype par-perc popsize adapted?)
               popu-with-children (generate-offspring-ga popu parents adapted?)
               popu-eva (evaluate-all-ga popu-with-children fitness adapted?)
               popu-surv (survivor-selection-ga popu-eva ftype surv-perc
-                                               popsize)
+                          popsize)
               new-pop (assoc popu-surv :poplist (for [i (:poplist popu-surv)]
                                                   (assoc i :tag 0)))]
           (when DEBUG?
             (do (println "no. parent pairs:" (count parents))
                 (println "no. parents + children:"
-                         (count (:poplist popu-with-children)))
+                  (count (:poplist popu-with-children)))
                 (println "no. survivors: "
-                         (count (:poplist popu-surv)))))
+                  (count (:poplist popu-surv)))))
           (recur (dec runs) new-pop))))))
 

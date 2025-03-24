@@ -2,14 +2,12 @@
   (:require
     [clojure.spec.alpha :as s]
     [clojure.spec.gen.alpha :as gen]
-    [clojure.spec.test.alpha :as st]
-    [orchestra.spec.test :as ost]
-    [provisdom.utility-belt.anomalies :as anomalies]
-    [provisdom.utility-belt.async :as async]
     [provisdom.math.core :as m]
     [provisdom.math.matrix :as mx]
     [provisdom.solvers.internal-apache-solvers :as apache-solvers]
-    [provisdom.solvers.nonlinear-programming :as nlp]))
+    [provisdom.solvers.nonlinear-programming :as nlp]
+    [provisdom.utility-belt.anomalies :as anomalies]
+    [provisdom.utility-belt.async :as async]))
 
 (s/def ::parallel? boolean?)
 

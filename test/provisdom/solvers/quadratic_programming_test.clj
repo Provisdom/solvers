@@ -14,7 +14,7 @@
 
 (def eq1 [[[1.0 1.0]] [3.0]])
 (def lt2 [[[1.0 1.0]] [3.0]])
-(def obj1 (apache-mx/apache-matrix [[1.0 0.5] [0.5 2.0]]))
+(def obj1 (apache-mx/->apache-matrix [[1.0 0.5] [0.5 2.0]]))
 
 (deftest quadratic-programming-test
   (is (spec-check qp/quadratic-programming

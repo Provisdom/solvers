@@ -2,13 +2,11 @@
   (:require
     [clojure.spec.alpha :as s]
     [clojure.spec.gen.alpha :as gen]
-    [clojure.spec.test.alpha :as st]
-    [orchestra.spec.test :as ost]
-    [provisdom.utility-belt.anomalies :as anomalies]
     [provisdom.math.core :as m]
-    [provisdom.math.vector :as vector]
     [provisdom.math.matrix :as mx]
-    [provisdom.solvers.logistic-regression :as log-regress]))
+    [provisdom.math.vector :as vector]
+    [provisdom.solvers.logistic-regression :as log-regress]
+    [provisdom.utility-belt.anomalies :as anomalies]))
 
 (s/def ::max-iter
   (s/with-gen (s/nilable ::m/int+)

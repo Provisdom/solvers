@@ -2,15 +2,13 @@
   (:require
     [clojure.spec.alpha :as s]
     [clojure.spec.gen.alpha :as gen]
-    [clojure.spec.test.alpha :as st]
-    [orchestra.spec.test :as ost]
-    [provisdom.utility-belt.anomalies :as anomalies]
     [provisdom.math.core :as m]
-    [provisdom.math.vector :as vector]
+    [provisdom.math.intervals :as intervals]
     [provisdom.math.matrix :as mx]
     [provisdom.math.tensor :as tensor]
-    [provisdom.math.intervals :as intervals]
-    [provisdom.solvers.optimize-univariate :as opt-uni]))
+    [provisdom.math.vector :as vector]
+    [provisdom.solvers.optimize-univariate :as opt-uni]
+    [provisdom.utility-belt.anomalies :as anomalies]))
 
 (s/def ::max-iter
   (s/with-gen (s/nilable ::m/int+)
@@ -51,17 +49,26 @@
 (defn solve-for-spread
   ""
   ([args] (solve-for-spread args {}))
-  ([{::keys [x-training-mx y-training x-test-mx y-test spread-guess spread-interval]}
+  ([{::keys [x-training-mx
+             y-training
+             x-test-mx
+             y-test
+             spread-guess
+             spread-interval]}
     {::keys [max-iter abs-accu rel-accu] :or {abs-accu 1e-6 rel-accu 1e-14}}]
    (let [max-iter (or max-iter 100)
-         negative-half-distances-mx (mapv (fn [x-test]
-                                            (negative-half-distances x-training-mx x-test))
+         negative-half-distances-mx (mapv
+                                      (fn [x-test]
+                                        (negative-half-distances
+                                          x-training-mx x-test))
                                       x-test-mx)
          spread-f (fn [spread]
                     (reduce +
-                      (map (fn [neg-half-distances y*]
-                             (m/sq (- y*
-                                     (solve* neg-half-distances spread y-training))))
+                      (map
+                        (fn [neg-half-distances y*]
+                          (m/sq (- y*
+                                  (solve*
+                                    neg-half-distances spread y-training))))
                         negative-half-distances-mx
                         y-test)))
          sol (opt-uni/optimize-univariate
@@ -107,7 +114,8 @@
                   (= (mx/rows x-test-mx) (count y-test))
                   (= (mx/columns x-training-mx) (mx/columns x-test-mx))
                   (not (== (first spread-interval) (second spread-interval)))
-                  (intervals/in-bounds? (intervals/bounds spread-interval true false)
+                  (intervals/in-bounds?
+                    (intervals/bounds spread-interval true false)
                     spread-guess)))))
           #(gen/bind (gen/tuple (s/gen ::x-training-mx)
                        (s/gen ::y-test)

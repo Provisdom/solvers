@@ -2,14 +2,13 @@
   (:require
     [clojure.spec.alpha :as s]
     [clojure.spec.gen.alpha :as gen]
-    [clojure.spec.test.alpha :as st]
-    [orchestra.spec.test :as ost]
-    [provisdom.utility-belt.async :as async]
-    [provisdom.utility-belt.anomalies :as anomalies]
     [provisdom.math.core :as m]
     [provisdom.math.derivatives :as derivatives]
     [provisdom.math.intervals :as intervals]
-    [provisdom.solvers.internal-apache-solvers :as apache-solvers]))
+    [provisdom.math.random :as random]
+    [provisdom.solvers.internal-apache-solvers :as apache-solvers]
+    [provisdom.utility-belt.anomalies :as anomalies]
+    [provisdom.utility-belt.async :as async]))
 
 (s/def ::parallel? boolean?)
 
@@ -249,6 +248,80 @@
   :ret (s/or :finite ::m/finite
          :anomaly ::anomalies/anomaly))
 
+(defn muller2!
+  ""
+  [{::keys [univariate-f interval]}
+   {::keys [max-iter rel-accu abs-accu]
+    :or    {abs-accu 1e-14
+            max-iter 1000
+            rel-accu 1e-6}}]
+  (let [[start end] (mapv double interval)
+        y0 (univariate-f start)
+        fn-val-accu m/dbl-close]
+    (if (< (m/abs y0) fn-val-accu)
+      start
+      (let [y1 (univariate-f end)
+            msg (str "No Bracketing for " start end y0 y1)]
+        (cond (< (m/abs y1) fn-val-accu) end
+              (m/pos? (* y0 y1)) {::anomalies/fn       (var muller2!)
+                                  ::anomalies/message  msg
+                                  ::anomalies/category ::anomalies/no-solve})
+        :else
+        (loop [i 0
+               x0 start
+               y0 y0
+               x1 end
+               y1 y1
+               x2 (* 0.5 (+ start end))
+               y2 (univariate-f x2)
+               old-x m/inf+]
+          (let [q (/ (- x2 x1) (- x1 x0))
+                a (* q
+                    (+ y2 (* -1.0 y1 (inc q)) (* q y0)))
+                b (+ (* y2 (inc (* 2.0 q)))
+                    (* -1.0 (inc q) (inc q) y1)
+                    (* q q y0))
+                c (* y2 (inc q))
+                delta (- (m/sq b) (* 4.0 a c))
+                den (if (m/non-? delta)
+                      (let [sqrt-d (m/sqrt delta)
+                            y (+ b sqrt-d)
+                            tol (- b sqrt-d)]
+                        (if (> (m/abs y) (m/abs tol)) y tol))
+                      (m/sqrt (- (m/sq b) delta)))
+                x (if (zero? den)
+                    (random/rnd! [start end])
+                    (let [x (- x2 (* 2.0 c (- x2 x1) (/ denominator)))]
+                      (if (or (== x x1) (== x x2))
+                        (let [x (+ x abs-accu)]
+                          (if (or (== x x1) (== x x2))
+                            (+ x abs-accu)
+                            x))
+                        x)))
+                old-x (if (zero? den)
+                        m/inf+
+                        old-x)
+                y (univariate-f x)
+                tol (max abs-accu (* rel-accu (m/abs x)))]
+            (cond (or (<= (m/abs (- x old-x)) tol)
+                    (<= (m/abs y) fn-val-accu))
+                  x
+
+                  (>= i max-iter)
+                  {::anomalies/fn       (var muller2!)
+                   ::anomalies/message  "max iterations reached"
+                   ::anomalies/category ::anomalies/no-solve}
+
+                  :else (recur (inc i) x1 y1 x2 y2 x y x))))))))
+
+(s/fdef muller2!
+  :args (s/cat :univariate-f-with-interval ::univariate-f-with-interval
+          :opts (s/? (s/keys :opt [::abs-accu
+                                   ::max-iter
+                                   ::rel-accu])))
+  :ret (s/or :finite ::m/finite
+         :anomaly ::anomalies/anomaly))
+
 (defn- root-selector-fn
   [univariate-f interval]
   (fn [results]
@@ -268,8 +341,8 @@
   "The default is to run `:all` of the solvers, or choose one of the following,
   or a collection containing one or more of the following:
    `:bisection`, `:bracketing-nth-order-brent`, `:brent`, `:brent-dekker`,
-   `:illinois`, `:modified-newton-raphson`, `:muller`, `:muller2`,
-   `:newton-raphson`, `:pegasus`, `:regula-falsi`, `:ridders`, `:secant`.
+   `:illinois`, `:modified-newton-raphson`, `:muller`, `:newton-raphson`,
+   `:pegasus`, `:regula-falsi`, `:ridders`, `:secant`.
 
   `::mnr-derivative-fn` - the function derivative for the modified newton 
   raphson method.
@@ -287,17 +360,16 @@
   ([{::keys [univariate-f guess interval]}
     {::keys [max-iter rel-accu abs-accu root-solver-type mnr-derivative-fn
              parallel?]
-     :or    {rel-accu         1e-6
+     :or    {max-iter         1000
+             rel-accu         1e-6
              abs-accu         1e-14
              root-solver-type :all
              parallel?        false}}]
-   (let [max-iter (or max-iter 1000)
-         solvers (if-not (= :all root-solver-type)
+   (let [solvers (if-not (= :all root-solver-type)
                    root-solver-type
                    (list :bisection :bracketing-nth-order-brent :brent
                      :brent-dekker :illinois :modified-newton-raphson :muller
-                     :muller2 :newton-raphson :pegasus :regula-falsi :ridders
-                     :secant))
+                     :newton-raphson :pegasus :regula-falsi :ridders :secant))
          solver-fn (fn [solver-type]
                      (condp = solver-type
                        :brent-dekker #(brent-dekker {::univariate-f univariate-f

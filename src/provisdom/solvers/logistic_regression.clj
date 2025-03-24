@@ -2,15 +2,13 @@
   (:require
     [clojure.spec.alpha :as s]
     [clojure.spec.gen.alpha :as gen]
-    [clojure.spec.test.alpha :as st]
-    [orchestra.spec.test :as ost]
-    [provisdom.utility-belt.anomalies :as anomalies]
+    [provisdom.apache-math.apache-matrix :as apache-mx]
     [provisdom.math.core :as m]
-    [provisdom.math.special-functions :as special-fns]
-    [provisdom.math.vector :as vector]
     [provisdom.math.matrix :as mx]
+    [provisdom.math.special-functions :as special-fns]
     [provisdom.math.tensor :as tensor]
-    [provisdom.apache-math.apache-matrix :as apache-mx]))
+    [provisdom.math.vector :as vector]
+    [provisdom.utility-belt.anomalies :as anomalies]))
 
 (s/def ::max-iter
   (s/with-gen (s/nilable ::m/int+)
@@ -75,9 +73,9 @@
                                                           (vec
                                                             (repeat dependent-var-count
                                                                     ridge-lambda)))]
-                                        (apache-mx/apache-matrix
+                                        (apache-mx/->apache-matrix
                                           (tensor/add (mx/mx* xt s-mx x-mx) lambda-diagonal)))
-                                  (apache-mx/apache-matrix (mx/mx* xt s-mx x-mx)))
+                                  (apache-mx/->apache-matrix (mx/mx* xt s-mx x-mx)))
                             xsx-1 (apache-mx/inverse xsx)]
                         (if-not xsx-1
                           {::anomalies/category ::anomalies/no-solve
@@ -101,7 +99,7 @@
          (fn [params] (pos? (count params)))))
 
 (s/def ::y
-  (s/and ::vector/vector-prob
+  (s/and (vector/vector-of-spec {:pred ::m/prob})
          (fn [y] (pos? (count y)))))
 
 (s/def ::x-mx
