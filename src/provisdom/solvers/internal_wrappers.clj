@@ -36,7 +36,7 @@
            (or (not lhs)
                (= (mx/rows lhs) (count rhs))))))
 
-(s/def ::apache-quadratic-objective ::apache-mx/pos-definite-apache-matrix-finite)
+(s/def ::apache-quadratic-objective ::apache-mx/positive-definite-apache-matrix-finite)
 
 (defn quadratic-programming-joptimizer
   "Minimizes (1/2) x^T P x + q^T x over x, where 'P' is the
