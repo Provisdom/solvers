@@ -14,14 +14,11 @@
 
              ;;;PROVISDOM
              provisdom/apache-math            {:git/url "https://github.com/Provisdom/apache-math.git"
-                                               :sha     "8c581e6894c879d6954b5faa4cbe5406b7bed905"}
-
+                                               :sha     "45f700c0eab534efbdfbd19d9670be23a37943b9"}
              provisdom/math                   {:git/url "https://github.com/Provisdom/math.git"
                                                :sha     "564f208441cd4cc4536ae69dbc4872040af05a2e"}
-
              provisdom/neanderthal-matrix     {:git/url "https://github.com/Provisdom/neanderthal-matrix.git"
-                                               :sha     "7e32900375032d82c153ea938503c989b8fcbdc3"}
-
+                                               :sha     "f12dcc43073cdf9dc91e73707a1c8b82fb71eafd"}
              provisdom/utility-belt           {:git/url "https://github.com/Provisdom/utility-belt.git"
                                                :sha     "efdbcff8a2f15fe20d5b969655f19fbf7f42b680"}}
  :mvn/repos {"XypronRelease" {:url "https://rsync.xypron.de/repository"}}
