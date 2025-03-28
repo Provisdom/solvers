@@ -4,21 +4,13 @@ on: [ push ]
 
 jobs:
   test-clj:
-    runs-on: computesoftware/java-neanderthal:c7fb0781c306c1af91545165411f0535d870cc3c-tools-deps
+    runs-on: ubuntu-latest
+    container:
+      image: computesoftware/java-neanderthal:c7fb0781c306c1af91545165411f0535d870cc3c-tools-deps
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Prepare java
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'zulu'
-          java-version: '21'
-
-      - name: Install clojure tools
-        uses: DeLaGuardo/setup-clojure@13.2
-        with:
-          cli: 1.12.0.1530
 
       - name: Cache clojure dependencies
         uses: actions/cache@v4
