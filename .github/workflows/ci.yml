@@ -1,0 +1,33 @@
+name: CI
+
+on: [ push ]
+
+jobs:
+  test-clj:
+    runs-on: ubuntu-latest
+    container:
+      image: computesoftware/java-neanderthal:c7fb0781c306c1af91545165411f0535d870cc3c-tools-deps
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Cache clojure dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.m2/repository
+            ~/.gitlibs
+            ~/.deps.clj
+          key: cljdeps-${{ hashFiles('deps.edn') }}
+          restore-keys: cljdeps-
+
+      - name: Run CLJ Tests
+        run: ./bin/kaocha --profile ci
+
+      - name: Publish Test Report
+        uses: mikepenz/action-junit-report@v5
+        if: success() || failure()
+        with:
+          report_paths: 'reports/junit.xml'
+          include_time_in_summary: true
