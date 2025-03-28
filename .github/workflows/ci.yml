@@ -4,7 +4,7 @@ on: [ push ]
 
 jobs:
   test-clj:
-    runs-on: ubuntu-latest
+    runs-on: computesoftware/java-neanderthal:c7fb0781c306c1af91545165411f0535d870cc3c-tools-deps
     steps:
       - name: Checkout
         uses: actions/checkout@v4
