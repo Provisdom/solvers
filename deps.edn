@@ -13,31 +13,31 @@
              org.ow2.sat4j/org.ow2.sat4j.pb   {:mvn/version "2.3.6"}
 
              ;;;PROVISDOM
-             #_#_provisdom/apache-math {:git/url "https://github.com/Provisdom/apache-math.git"
-                                        :sha     "523d792a07715407ce1a3d8c205ea62d2e26e9ac"}
-             provisdom/apache-math            {:local/root "../apache-math"}
-             #_#_provisdom/math {:git/url "https://github.com/Provisdom/math.git"
-                                 :sha     "8ab70786520655320e1c079f1d74c55b377ea5d2"}
-             provisdom/math                   {:local/root "../math"}
-             #_#_provisdom/neanderthal-matrix {:git/url "https://github.com/Provisdom/neanderthal-matrix.git"
-                                               :sha     "b8ad608fef9fe54e765bd1d3c9ff259e5d072236"}
-             provisdom/neanderthal-matrix     {:local/root "../neanderthal-matrix"}
-             #_#_provisdom/utility-belt {:git/url "https://github.com/Provisdom/utility-belt.git"
-                                         :sha     "37a762091912860b3954f95de7aaebbd5c930a5a"}
-             provisdom/utility-belt           {:local/root "../utility-belt"}}
+             provisdom/apache-math            {:git/url "https://github.com/Provisdom/apache-math.git"
+                                               :sha     "8c581e6894c879d6954b5faa4cbe5406b7bed905"}
+
+             provisdom/math                   {:git/url "https://github.com/Provisdom/math.git"
+                                               :sha     "564f208441cd4cc4536ae69dbc4872040af05a2e"}
+
+             provisdom/neanderthal-matrix     {:git/url "https://github.com/Provisdom/neanderthal-matrix.git"
+                                               :sha     "7e32900375032d82c153ea938503c989b8fcbdc3"}
+
+             provisdom/utility-belt           {:git/url "https://github.com/Provisdom/utility-belt.git"
+                                               :sha     "efdbcff8a2f15fe20d5b969655f19fbf7f42b680"}}
  :mvn/repos {"XypronRelease" {:url "https://rsync.xypron.de/repository"}}
- :aliases   {:dev         {:extra-paths ["siderail"]
-                           :extra-deps  {ca.umontreal.iro.simul/ssj {:mvn/version "3.3.2"}
-                                         metasoarous/oz             {:mvn/version "1.5.6"}}}
-             :test        {:extra-paths ["test"]
-                           :extra-deps  {com.cognitect/test-runner {:git/url "https://github.com/cognitect-labs/test-runner.git"
-                                                                    :sha     "7284cda41fb9edc0f3bc6b6185cfb7138fc8a023"}
-                                         criterium/criterium       {:mvn/version "0.4.6"}
-                                         orchestra/orchestra       {:mvn/version "2021.01.01-1"}
-                                         org.clojure/test.check    {:mvn/version "1.1.1"}
-                                         #_#_provisdom/test {:git/url "https://github.com/Provisdom/test.git"
-                                                             :sha     "e34b8d22f14401c5dca6e213b981a244865cc9fd"}
-                                         provisdom/test            {:local/root "../test"}}}
-             :test-runner {:extra-deps {lambdaisland/kaocha           {:mvn/version "1.87.1366"}
-                                        lambdaisland/kaocha-junit-xml {:mvn/version "1.17.101"}}
-                           :main-opts  ["-m" "kaocha.runner"]}}}
+ :aliases   {:dev             {:extra-paths ["siderail"]
+                               :extra-deps  {ca.umontreal.iro.simul/ssj {:mvn/version "3.3.2"}
+                                             metasoarous/oz             {:mvn/version "1.5.6"}}}
+             :local           {:override-deps {provisdom/apache-math        {:local/root "../apache-math"}
+                                               provisdom/math               {:local/root "../math"}
+                                               provisdom/neanderthal-matrix {:local/root "../neanderthal-matrix"}
+                                               provisdom/utility-belt       {:local/root "../utility-belt"}}}
+             :test            {:extra-paths ["test"]
+                               :extra-deps  {criterium/criterium    {:mvn/version "0.4.6"}
+                                             orchestra/orchestra    {:mvn/version "2021.01.01-1"}
+                                             org.clojure/test.check {:mvn/version "1.1.1"}
+                                             provisdom/test         {:git/url "https://github.com/Provisdom/test.git"
+                                                                     :sha     "ec0b531bf0e5a8b5897a8dde332bd08d478578f4"}}}
+             :test-clj-runner {:extra-deps {lambdaisland/kaocha           {:mvn/version "1.91.1392"}
+                                            lambdaisland/kaocha-junit-xml {:mvn/version "1.17.101"}}
+                               :main-opts  ["-m" "kaocha.runner"]}}}
